@@ -7,13 +7,15 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: cluster_auth
+module: cluster_resource
 
-short_description: authenticates pacemaker to nodes in a cluster
+short_description: configures a cluster resource
 
 version_added: "1.0"
 
-description: authenticates nodes in a pacemaker cluster for either RHEL or SUSE operating systems 
+description: 
+    - configures a cluster resource
+    - for RHEL or SUSE operating systems 
 
 options:
     os:
@@ -24,75 +26,54 @@ options:
         type: str
     state:
         description:
-            - "present" authenticates the node
-            - "absent" removes the authentication
+            - 'present' ensures the resource is exists
+            - 'absent' ensures the resource doesn't exist
         required: false
         default: present
         choices: ['present', 'absent']
         type: str
-    node:
+    name:
         description:
-            - the node to authenticate or deauthenticate
+            - the name of the cluster resource
         required: true
         type: str
-    username:
+    resource_type:
         description:
-            - the username of the cluster administrator
+            - the type of resource to configure
         required: false
-        default: "hacluster"
         type: str
-    password:
+    options:
         description:
-            - the password of the cluster administrator
-        required: true
+            - additional options to include when configuring the resource
+        required: false
         type: str
-
 author:
     - William Sheehan (@wksheehan)
 '''
 
 EXAMPLES = r'''
-- name: Authenticate user hacluster on node1 for both the nodes in a two-node cluster (node1 and node2) on RedHat
-  cluster_auth:
+- name: Create a stonith resource
+  cluster_resource:
     os: RedHat
     state: present
-    node: node1 node2
-    username: hacluster
-    password: testpass
-
-- name: Deauthenticate node1 on RedHat
-  cluster_auth:
-    os: RedHat
-    state: absent
-    node: node1
-    password: testpass
+    name: my_stonith_resource
+    resource-type: stonith
 '''
 
-# RETURN = r'''
-# # These are examples of possible return values, and in general should use other names for return values.
-# # original_message:
-# #     description: The original name param that was passed in.
-# #     type: str
-# #     returned: always
-# #     sample: 'hello world'
-# # message:
-# #     description: The output message that the test module generates.
-# #     type: str
-# #     returned: always
-# #     sample: 'goodbye'
-# '''
-
 from ansible.module_utils.basic import AnsibleModule
+from distutils.spawn import find_executable
 
 
 def run_module():
-    # define available arguments/parameters a user can pass to the module
+    
+    # ==== Setup ====
+    
     module_args = dict(
         os=dict(required=True, choices=['RedHat', 'Suse']),
         state=dict(required=False, default="present", choices=['present', 'absent']),
-        node=dict(required=True),
-        username=dict(required=False, default="hacluster"),
-        password=dict(required=True, no_log=True)
+        name=dict(required=True),
+        resource_type=dict(required=False),
+        options=dict(required=False)
     )
 
     module = AnsibleModule(
@@ -104,12 +85,62 @@ def run_module():
         changed=False
     )
 
-    # ADD CHECK MODE SUPPORT
-    if module.check_mode:
-        module.exit_json(**result)
+    os              = module.params['os']
+    state           = module.params['state']
+    name            = module.params['name']
+    resource_type   = module.params['resource_type']
+    options         = module.params['options']
+    #ctype           = "property" if node is None else "attribute"
 
-    # FAILURE STATEMENT
-    # module.fail_json(msg='FAILURE MESSAGE', **result)
+
+    # ==== Command dictionary ====
+
+    commands                                        = {}
+    commands["RedHat"]                              = {}
+    commands["Suse"]                                = {}
+    commands["RedHat"]["property" ]                 = {}
+    commands["Suse"  ]["property" ]                 = {}
+    commands["RedHat"]["attribute"]                 = {}
+    commands["Suse"  ]["attribute"]                 = {}
+    commands["RedHat"]["property" ]["set"]          = "pcs property set %s=%s" % (name, value)
+    commands["Suse"  ]["property" ]["set"]          = "crm configure property %s=%s" % (name, value)
+    commands["RedHat"]["attribute"]["set"]          = "pcs node attribute %s %s=%s" % (node, name, value)
+    commands["Suse"  ]["attribute"]["set"]          = "crm node attribute %s set %s %s" % (node, name, value)
+    commands["RedHat"]["property" ]["unset"]        = "pcs property unset %s" % name
+    commands["Suse"  ]["property" ]["unset"]        = "crm configure property"
+    commands["RedHat"]["attribute"]["unset"]        = "pcs node attribute %s %s=" % (node, name)
+    commands["Suse"  ]["attribute"]["unset"]        = "crm node attribute %s delete %s" % (node, name)
+    commands["RedHat"]["property" ]["show"]         = "pcs property show %s | grep %s" % (name, name)
+    commands["Suse"  ]["property" ]["show"]         = "crm configure show type:property | grep %s=" % name
+    commands["RedHat"]["attribute"]["show"]         = "pcs node attribute --name %s | grep %s" % (name, node)
+    commands["Suse"  ]["attribute"]["show"]         = "crm node attribute %s show %s" % (node, name)
+    commands["RedHat"]["property" ]["list"]         = "pcs property list"
+    commands["Suse"  ]["property" ]["list"]         = "crm configure show type:property"
+    commands["RedHat"]["attribute"]["list"]         = "pcs node attribute"
+    commands["Suse"  ]["attribute"]["list"]         = "crm configure show type:node"
+    commands["RedHat"]["property" ]["contains"]     = "%s: %s" % (name, value)
+    commands["Suse"  ]["property" ]["contains"]     = "%s=%s" % (name, value)
+    commands["RedHat"]["attribute"]["contains"]     = "%s=%s" % (name, value)
+    commands["Suse"  ]["attribute"]["contains"]     = "name=%s value=%s" % (name, value)
+
+
+    # ==== Initial checks ====
+
+    if find_executable('pcs') is None:
+        module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
+
+
+    # ==== Functions ====
+
+
+    # ==== Main code ====
+
+    # Configure resource
+    if state == "present":
+        print('x')
+    # Remove resource
+    else:
+        print('x')
 
     # SUCCESS STATEMENT
     module.exit_json(**result)

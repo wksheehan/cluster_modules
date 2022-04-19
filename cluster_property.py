@@ -68,7 +68,9 @@ from distutils.spawn import find_executable
 
 
 def run_module():
-    # define available arguments/parameters a user can pass to the module
+    
+    # ==== Setup ====
+    
     module_args = dict(
         os=dict(required=True, choices=['RedHat', 'Suse']),
         state=dict(required=False, default="present", choices=['present', 'absent']),
@@ -86,95 +88,108 @@ def run_module():
         changed=False
     )
 
-    # Capture input
-    os = module.params['os']
-    state = module.params['state']
-    node = module.params['node']
-    name = module.params['name']
-    value = module.params['value']
-    type = "property" if node is None else "attribute"
+    os      = module.params['os']
+    state   = module.params['state']
+    node    = module.params['node']
+    name    = module.params['name']
+    value   = module.params['value']
+    ctype   = "property" if node is None else "attribute"
 
-    # Dictionary of commands to run
+
+    # ==== Command dictionary ====
+
     commands                                        = {}
     commands["RedHat"]                              = {}
-    commands["RedHat"]["property"]                  = {}
-    commands["RedHat"]["property"]["set"]           = "pcs property set %s=%s" % (name, value)
-    commands["RedHat"]["property"]["unset"]         = "pcs property unset %s" % name
-    commands["RedHat"]["property"]["show"]          = "pcs property show %s | grep %s" % (name, name)
-    commands["RedHat"]["property"]["list"]          = "pcs property list"
-    commands["RedHat"]["property"]["contains"]      = "%s: %s" % (name, value)
-    commands["RedHat"]["attribute"]                 = {}
-    commands["RedHat"]["attribute"]["set"]          = "pcs node attribute %s %s=%s" % (node, name, value)
-    commands["RedHat"]["attribute"]["unset"]        = "pcs node attribute %s %s=" % (node, name)
-    commands["RedHat"]["attribute"]["show"]         = "pcs node attribute --name %s | grep %s" % (name, node)
-    commands["RedHat"]["attribute"]["list"]         = "pcs node attribute"
-    commands["RedHat"]["attribute"]["contains"]     = "%s=%s" % (name, value)
     commands["Suse"]                                = {}
-    commands["Suse"]["property"]                    = {}
-    commands["Suse"]["property"]["set"]             = "crm configure property %s=%s" % (name, value)
-    commands["Suse"]["property"]["unset"]           = "crm configure property"
-    commands["Suse"]["property"]["show"]            = "crm configure show type:property | grep %s=" % name
-    commands["Suse"]["property"]["list"]            = "crm configure show type:property"
-    commands["Suse"]["property"]["contains"]        = "%s=%s" % (name, value)
-    commands["Suse"]["attribute"]                   = {}
-    commands["Suse"]["attribute"]["set"]            = "crm node attribute %s set %s %s" % (node, name, value)
-    commands["Suse"]["attribute"]["unset"]          = "crm node attribute %s delete %s" % (node, name)
-    commands["Suse"]["attribute"]["show"]           = "crm node attribute %s show %s" % (node, name)
-    commands["Suse"]["attribute"]["list"]           = "crm configure show type:node"
-    commands["Suse"]["attribute"]["contains"]       = "name=%s value=%s" % (name, value)
+    commands["RedHat"]["property" ]                 = {}
+    commands["Suse"  ]["property" ]                 = {}
+    commands["RedHat"]["attribute"]                 = {}
+    commands["Suse"  ]["attribute"]                 = {}
+    commands["RedHat"]["property" ]["set"]          = "pcs property set %s=%s" % (name, value)
+    commands["Suse"  ]["property" ]["set"]          = "crm configure property %s=%s" % (name, value)
+    commands["RedHat"]["attribute"]["set"]          = "pcs node attribute %s %s=%s" % (node, name, value)
+    commands["Suse"  ]["attribute"]["set"]          = "crm node attribute %s set %s %s" % (node, name, value)
+    commands["RedHat"]["property" ]["unset"]        = "pcs property unset %s" % name
+    commands["Suse"  ]["property" ]["unset"]        = "crm configure property"
+    commands["RedHat"]["attribute"]["unset"]        = "pcs node attribute %s %s=" % (node, name)
+    commands["Suse"  ]["attribute"]["unset"]        = "crm node attribute %s delete %s" % (node, name)
+    commands["RedHat"]["property" ]["show"]         = "pcs property show %s | grep %s" % (name, name)
+    commands["Suse"  ]["property" ]["show"]         = "crm configure show type:property | grep %s=" % name
+    commands["RedHat"]["attribute"]["show"]         = "pcs node attribute --name %s | grep %s" % (name, node)
+    commands["Suse"  ]["attribute"]["show"]         = "crm node attribute %s show %s" % (node, name)
+    commands["RedHat"]["property" ]["list"]         = "pcs property list"
+    commands["Suse"  ]["property" ]["list"]         = "crm configure show type:property"
+    commands["RedHat"]["attribute"]["list"]         = "pcs node attribute"
+    commands["Suse"  ]["attribute"]["list"]         = "crm configure show type:node"
+    commands["RedHat"]["property" ]["contains"]     = "%s: %s" % (name, value)
+    commands["Suse"  ]["property" ]["contains"]     = "%s=%s" % (name, value)
+    commands["RedHat"]["attribute"]["contains"]     = "%s=%s" % (name, value)
+    commands["Suse"  ]["attribute"]["contains"]     = "name=%s value=%s" % (name, value)
 
-    # Initial checks
+
+    # ==== Initial checks ====
+
     if find_executable('pcs') is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     if state == "present" and value is None:
         module.fail_json(msg="value parameter must be supplied when state is present")
     # Make sure we can communicate with pcs
-    rc, out, err = module.run_command(commands[os][type]["list"])
+    rc, out, err = module.run_command(commands[os][ctype]["list"])
     if rc != 0:
         module.fail_json(msg="Unable to retreive cluster properties or node attributes. Is the cluster running?", **result)
 
-    ### Functions ###
+
+    # ==== Functions ====
 
     # Check if a property or attribute (specified via 'type' parameter) is already set to desired value
-    def already_set():
-        rc, out, err = module.run_command(commands[os][type]["show"])
+    def check_property():
+        rc, out, err = module.run_command(commands[os][ctype]["show"])
         if rc != 0:
-            return False
+            return None
         else:
-            return commands[os][type]["contains"] in out
+            if commands[os][ctype]["contains"] in out:
+                return value
+            else:
+                return ""
     
-    ### Main code ###
+    def set_property():
+        rc, out, err = module.run_command(commands[os][ctype]["set"])
+        if rc == 0:
+            result["message"] += "Successfully set " + name + " to " + value
+        else:
+            result["changed"] = False
+            module.fail_json(msg="Failed to set " + name + " to " + value, **result)
+
+    def unset_property():
+        rc, out, err = module.run_command(commands[os][ctype]["unset"])
+        if rc == 0:
+            result["message"] += "Successfully unset " + name
+        else:
+            result["changed"] = False
+            module.fail_json(msg="Failed to unset " + name, **result)
+
+    # ==== Main code ====
 
     # Set property
     if state == "present":
-        if not already_set():
+        # Property is not set or is set to wrong value
+        if check_property() != value:
             result["changed"] = True
             if not module.check_mode:
-                rc, out, err = module.run_command(commands[os][type]["set"])
-                if rc == 0:
-                    result["message"] += "Successfully set " + name + " to " + value
-                else:
-                    result["changed"] = False
-                    module.fail_json(msg="Failed to set " + name + " to " + value, **result)
-        # Property already set
+                set_property()
+        # Property is already set to correct value
         else:
-            result["message"] += "No changes needed: node attribute is already set. "
+            result["message"] += "No changes needed: %s is already set. " % ctype
     # Unset property
     else:
-        rc, out, err = module.run_command(commands[os][type]["show"])
-        # Property is already set to some value
-        if rc == 0:
+        # Property is set to something
+        if check_property() is not None:
             result["changed"] = True
             if not module.check_mode:
-                rc, out, err = module.run_command(commands[os][type]["unset"])
-                if rc == 0:
-                    result["message"] += "Successfully unset " + name
-                else:
-                    result["changed"] = False
-                    module.fail_json(msg="Failed to unset " + name, **result)
+                unset_property()
         # Property is not currently set
         else:
-            result["message"] += "No changes needed: node attribute is not currently set. "
+            result["message"] += "No changes needed: %s is not currently set. " % ctype
 
 
     # SUCCESS STATEMENT

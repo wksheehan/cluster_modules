@@ -134,17 +134,17 @@ def run_module():
         message=""
     )
 
-    os = module.params['os']
-    version = module.params['version']
-    state = module.params['state']
-    sid = module.params['sid']
-    existing_node = module.params['existing_node']
-    nodes = module.params['nodes']
-    nodes_set = set(nodes.split())
-    tier = module.params['tier']
-    token = module.params['token']
-    prefix = tier if tier != "hana" else "hdb"
-    curr_node = socket.gethostname()
+    os              = module.params['os']
+    version         = module.params['version']
+    state           = module.params['state']
+    sid             = module.params['sid']
+    existing_node   = module.params['existing_node']
+    nodes           = module.params['nodes']
+    nodes_set       = set(nodes.split())
+    tier            = module.params['tier']
+    token           = module.params['token']
+    prefix          = tier if tier != "hana" else "hdb"
+    curr_node       = socket.gethostname()
 
 
     # ==== Initial checks ====
@@ -166,35 +166,39 @@ def run_module():
 
     commands                                    = {}
     commands["RedHat"]                          = {}
-    commands["Suse"]                            = {}
-    commands["RedHat"]["7"]                     = {}
-    commands["RedHat"]["8"]                     = {}
-    commands["Suse"]["all"]                     = {}
-    commands["RedHat"]["7"]["setup"]            = "pcs cluster setup --name %s_cluster %s --token %s" % (sid, nodes, token)
-    commands["RedHat"]["8"]["setup"]            = "pcs cluster setup %s_cluster %s totem token=%s" % (sid, nodes, token)
-    commands["Suse"]["all"]["setup"]            = "ha-cluster-init -y --name '%s_%s' --interface eth0 --no-overwrite-sshkey --nodes '%s'" % (prefix, sid, nodes)
-    commands["RedHat"]["7"]["destroy"]          = "pcs cluster destroy"
-    commands["RedHat"]["8"]["destroy"]          = "pcs cluster destroy"
-    commands["Suse"]["all"]["destroy"]          = "crm cluster remove -y -c %s %s --force" # % (curr_node, " ".join(nodes_set))
-    commands["RedHat"]["7"]["add"]              = "pcs cluster node add "
-    commands["RedHat"]["8"]["add"]              = "pcs cluster node add "
-    commands["Suse"]["all"]["add"]              = "crm cluster add -y "
-    commands["RedHat"]["7"]["remove"]           = "pcs cluster node remove %s"
-    commands["RedHat"]["8"]["remove"]           = "pcs cluster node remove %s"
-    commands["Suse"]["all"]["remove"]           = "crm cluster remove -y %s --force" 
-    commands["RedHat"]["7"]["start"]            = "pcs cluster start"
-    commands["RedHat"]["8"]["start"]            = "pcs cluster start"
-    commands["Suse"]["all"]["start"]            = "crm cluster start" 
-    commands["RedHat"]["7"]["stop"]             = "pcs cluster stop"
-    commands["RedHat"]["8"]["stop"]             = "pcs cluster stop"
-    commands["Suse"]["all"]["stop"]             = "crm cluster stop" 
-    commands["RedHat"]["7"]["status"]           = "pcs status"
-    commands["RedHat"]["8"]["status"]           = "pcs status"
-    commands["Suse"]["all"]["status"]           = "crm status"
-    commands["RedHat"]["7"]["online"]           = "pcs status | grep '^Online:'"
-    commands["RedHat"]["8"]["online"]           = "pcs status | grep '^  \* Online:'"
-    commands["Suse"]["all"]["online"]           = "crm status | grep 'Online:'"
-    commands["Suse"]["all"]["join"]             = "ha-cluster-join -y -c %s --interface eth0" % existing_node
+    commands["Suse"  ]                          = {}
+    commands["RedHat"]["7"  ]                   = {}
+    commands["RedHat"]["8"  ]                   = {}
+    commands["Suse"  ]["all"]                   = {}
+    commands["RedHat"]["7"  ]["setup"]          = "pcs cluster setup --name %s_cluster %s --token %s" % (sid, nodes, token)
+    commands["RedHat"]["8"  ]["setup"]          = "pcs cluster setup %s_cluster %s totem token=%s" % (sid, nodes, token)
+    commands["Suse"  ]["all"]["setup"]          = "ha-cluster-init -y --name '%s_%s' --interface eth0 --no-overwrite-sshkey --nodes '%s'" % (prefix, sid, nodes)
+    commands["RedHat"]["7"  ]["destroy"]        = "pcs cluster destroy"
+    commands["RedHat"]["8"  ]["destroy"]        = "pcs cluster destroy"
+    commands["Suse"  ]["all"]["destroy"]        = "crm cluster remove -y -c %s %s --force" # % (curr_node, " ".join(nodes_set))
+    commands["RedHat"]["7"  ]["add"]            = "pcs cluster node add "
+    commands["RedHat"]["8"  ]["add"]            = "pcs cluster node add "
+    commands["Suse"  ]["all"]["add"]            = "crm cluster add -y "
+    commands["RedHat"]["7"  ]["remove"]         = "pcs cluster node remove %s"
+    commands["RedHat"]["8"  ]["remove"]         = "pcs cluster node remove %s"
+    commands["Suse"  ]["all"]["remove"]         = "crm cluster remove -y %s --force" 
+    commands["RedHat"]["7"  ]["start"]          = "pcs cluster start"
+    commands["RedHat"]["8"  ]["start"]          = "pcs cluster start"
+    commands["Suse"  ]["all"]["start"]          = "crm cluster start" 
+    commands["RedHat"]["7"  ]["stop"]           = "pcs cluster stop"
+    commands["RedHat"]["8"  ]["stop"]           = "pcs cluster stop"
+    commands["Suse"  ]["all"]["stop"]           = "crm cluster stop" 
+    commands["RedHat"]["7"  ]["status"]         = "pcs status"
+    commands["RedHat"]["8"  ]["status"]         = "pcs status"
+    commands["Suse"  ]["all"]["status"]         = "crm status"
+    commands["RedHat"]["7"  ]["online"]         = "pcs status | grep '^Online:'"
+    commands["RedHat"]["8"  ]["online"]         = "pcs status | grep '^  \* Online:'"
+    commands["Suse"  ]["all"]["online"]         = "crm status | grep 'Online:'"
+    commands["Suse"  ]["all"]["join"]           = "ha-cluster-join -y -c %s --interface eth0" % existing_node
+    commands["Redhat"]["regex"]                 = r"ring0_addr\s*:\s*([\w.-]+)\s*"
+    commands["Suse"  ]["regex"]                 = r"host\s*([\w.-]+);"
+    commands["Redhat"]["file"]                  = "/etc/corosync/corosync.conf"
+    commands["Suse"  ]["file"]                  = "/etc/csync2/csync2.cfg"
 
     
     # ==== Functions ====
@@ -241,8 +245,8 @@ def run_module():
 
     # Get set of existing nodes in the cluster configuration
     def get_nodes():
-        corosync_conf = open('/etc/corosync/corosync.conf', 'r')
-        node_names = re.compile(r"ring0_addr\s*:\s*([\w.-]+)\s*", re.M)
+        corosync_conf = open(commands[os]["file"], 'r')
+        node_names = re.compile(commands[os]["regex"], re.M)
         return set(node_names.findall(corosync_conf.read()))
 
     # Get set of nodes that are online

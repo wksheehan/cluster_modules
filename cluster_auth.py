@@ -88,11 +88,11 @@ def run_module():
     )
 
     # capture inputs
-    os = module.params['os']
-    version = module.params['version']
-    nodes = module.params['nodes']
-    username = module.params['username']
-    password = module.params['password']
+    os          = module.params['os']
+    version     = module.params['version']
+    nodes       = module.params['nodes']
+    username    = module.params['username']
+    password    = module.params['password']
 
     # initial validation checks
     # add one checking version matches os
