@@ -36,8 +36,8 @@ options:
         type: str
     state:
         description:
-            - "present" creates the cluster
-            - "absent" removes the cluster
+            - "present" creates or modifies the cluster
+            - "absent" removes the entire cluster
         required: false
         default: present
         choices: ['present', 'absent']
@@ -49,12 +49,14 @@ options:
         type: str
     nodes:
         description:
-            - the nodes to include in the cluster
+            - the exact list of nodes desired to be in the cluster
+            - any nodes currently in the cluster not specified here will be removed
+            - any nodes not currently in the cluster specified here will be added
         required: true
         type: str
     tier:
         description:
-            - the node tier
+            - the node tier, to be used in naming the cluster
         required: true
         type: str
     token:
@@ -97,6 +99,7 @@ from ansible.module_utils.basic import AnsibleModule
 from distutils.spawn import find_executable
 from time import sleep
 import re
+import socket
 
 def run_module():
     module_args = dict(
@@ -129,44 +132,54 @@ def run_module():
     tier = module.params['tier']
     token = module.params['token']
     prefix = tier if tier != "hana" else "hdb"
+    hostnode = socket.gethostname()
 
-    # Validations
+    # Initial checks
+    if find_executable('pcs') is None:
+        module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     if os == "RedHat" and version is None:
         module.fail_json(msg="OS version must be specified when using RedHat")
     if os == "Suse":
         version = "all"
-    if find_executable('pcs') is None:
-        module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
 
     # Dictionary of commands to run
-    commands                            = {}
-    commands["RedHat"]                  = {}
-    commands["RedHat"]["7"]             = {}
-    commands["RedHat"]["8"]             = {}
-    commands["RedHat"]["7"]["setup"]    = ["pcs cluster setup --name %s_cluster %s --token %s" %(sid, nodes, token)]
-    commands["RedHat"]["8"]["setup"]    = ["pcs cluster setup %s_cluster %s totem token=%s" %(sid, nodes, token)]
-    commands["RedHat"]["7"]["destroy"]  = "pcs cluster destroy"
-    commands["RedHat"]["8"]["destroy"]  = "pcs cluster destroy"
-    commands["RedHat"]["7"]["add"]      = "pcs cluster node add "
-    commands["RedHat"]["8"]["add"]      = "pcs cluster node add "
-    commands["RedHat"]["7"]["remove"]   = "pcs cluster node remove "
-    commands["RedHat"]["8"]["remove"]   = "pcs cluster node remove "
-    commands["RedHat"]["7"]["start"]    = "pcs cluster start --all"
-    commands["RedHat"]["8"]["start"]    = "pcs cluster start --all"
-    commands["RedHat"]["7"]["stop"]     = "pcs cluster stop --all"
-    commands["RedHat"]["8"]["stop"]     = "pcs cluster stop --all"
-    commands["RedHat"]["7"]["status"]   = "pcs status"
-    commands["RedHat"]["8"]["status"]   = "pcs status"
-    commands["RedHat"]["7"]["online"]   = "pcs status | grep '^Online:'"
-    commands["RedHat"]["8"]["online"]   = "pcs status | grep '^  \* Online:'"
-    commands["Suse"]                    = {}
-    commands["Suse"]["all"]             = {}
-    commands["Suse"]["all"]["setup"]    = ["ha-cluster-init -y --name '%s_%s' --interface eth0 --no-overwrite-sshkey" % (prefix, sid),
-                                           "ha-cluster-join -y -c %s --interface eth0" % nodes]
-    commands["Suse"]["all"]["status"]   = "crm status"
+    commands                                    = {}
+    commands["RedHat"]                          = {}
+    commands["RedHat"]["7"]                     = {}
+    commands["RedHat"]["8"]                     = {}
+    commands["RedHat"]["7"]["setup"]            = "pcs cluster setup --name %s_cluster %s --token %s" % (sid, nodes, token)
+    commands["RedHat"]["8"]["setup"]            = "pcs cluster setup %s_cluster %s totem token=%s" % (sid, nodes, token)
+    commands["RedHat"]["7"]["destroy"]          = "pcs cluster destroy"
+    commands["RedHat"]["8"]["destroy"]          = "pcs cluster destroy"
+    commands["RedHat"]["7"]["add"]              = "pcs cluster node add "
+    commands["RedHat"]["8"]["add"]              = "pcs cluster node add "
+    commands["RedHat"]["7"]["remove"]           = "pcs cluster node remove "
+    commands["RedHat"]["8"]["remove"]           = "pcs cluster node remove "
+    commands["RedHat"]["7"]["start"]            = "pcs cluster start --all"
+    commands["RedHat"]["8"]["start"]            = "pcs cluster start --all"
+    commands["RedHat"]["7"]["stop"]             = "pcs cluster stop --all"
+    commands["RedHat"]["8"]["stop"]             = "pcs cluster stop --all"
+    commands["RedHat"]["7"]["status"]           = "pcs status"
+    commands["RedHat"]["8"]["status"]           = "pcs status"
+    commands["RedHat"]["7"]["online"]           = "pcs status | grep '^Online:'"
+    commands["RedHat"]["8"]["online"]           = "pcs status | grep '^  \* Online:'"
+    commands["Suse"]                            = {}
+    commands["Suse"]["all"]                     = {}
+    commands["Suse"]["ha"]["setup"]             = "ha-cluster-init -y --name '%s_%s' --interface eth0 --no-overwrite-sshkey" % (prefix, sid)
+    commands["Suse"]["ha"]["add"]               = "ha-cluster-join -y -c %s --interface eth0" % nodes
+    commands["Suse"]["crm"]["setup"]            = "crm cluster init -y --name '%s_%s' --interface eth0 --nodes '%s'" % (prefix, sid, nodes)
+    commands["Suse"]["crm"]["add"]              = "crm cluster add -y %s" # can only add one node at a time
+    commands["Suse"]["crm"]["remove_host"]      = "crm cluster remove -y -c %s %s --force" # % (hostnode, nodes_to_remove)
+    commands["Suse"]["crm"]["remove_some"]      = "crm cluster remove -y %s" 
+    commands["Suse"]["crm"]["start"]            = "crm cluster start" 
+    commands["Suse"]["crm"]["stop"]             = "crm cluster stop" 
+    commands["Suse"]["all"]["status"]           = "crm status"
+    commands["Suse"]["all"]["online"]           = "crm status | grep 'Online:'"
 
-    ##### FUNCTIONS #####
-    
+    #############################
+    ######### FUNCTIONS #########
+    #############################
+
     # Start a cluster on all configured nodes
     def start_cluster():
         rc, out, err = module.run_command(commands[os][version]["start"])
@@ -209,80 +222,121 @@ def run_module():
             seconds += 10
         return nodes_online
 
-    ##### MAIN CODE #####
+    #############################
+    ######### MAIN CODE #########
+    #############################
 
     # Check if cluster configuration exists
     corosync_conf_exists = os.path.isfile('/etc/corosync/corosync.conf')
 
-    # Create or modify the cluster
-    if state == "present":
-        # No existing cluster, set up a new one
-        if not corosync_conf_exists:
-            result["changed"] = True
-            if not module.check_mode:
-                for cmd in commands[os][version]["setup"]:
-                    rc, out, err = module.run_command(cmd)
+    # ALWAYS ENSURE CLUSTER IS STARTED BEFORE DOING THINGS
+    # Suse
+    if os == "Suse":
+        # Create or modify the cluster
+        if state == "present":
+            # No existing cluster, set up new one
+            if not corosync_conf_exists:
+                result["changed"] = True
+                if not module.check_mode:
+                    # Current node initiates the cluster
+                    if hostnode == nodes:
+                        rc, out, err = module.run_command(commands[os][version]["setup"])
+                        if rc != 0:
+                            result["changed"] = False
+                            module.fail_json(msg="Failed to set up the cluster", **result)
+                        result["message"] += "Successfully set up the cluster. "
+                    # Different node initiated the cluster
+                    else:
+                        rc, out, err = module.run_command(commands[os][version]["add"])
+                        if rc != 0:
+                            result["changed"] = False
+                            module.fail_json(msg="Failed to set up the cluster", **result)
+                        result["message"] += "Successfully added node %s to the cluster. " % hostnode
+            # Existing clutser detected
+            else:
+                # Ensure current node is in the cluster configuration
+                print()
+        # Remove the cluster
+        else:
+            # Get all nodes in the cluster 
+            # Make sure host node is the last one to be removed otherwise it can't remove the other nodes in the system
+            nodes_to_remove = set()
+            if hostnode in nodes_to_remove:
+                nodes_to_remove -= hostnode
+                cmd = commands[os][version]["remove_host"] % (hostnode, nodes_to_remove)
+            else:
+                cmd = commands[os][version]["remove_some"] % nodes_to_remove
+
+    # RedHat
+    else:
+        # Create or modify the cluster
+        if state == "present":
+            # No existing cluster, set up a new one
+            if not corosync_conf_exists:
+                result["changed"] = True
+                if not module.check_mode:
+                    rc, out, err = module.run_command(commands[os][version]["setup"])
                     if rc != 0:
                         result["changed"] = False
                         module.fail_json(msg="Failed to set up the cluster", **result)
-                result["message"] += "Successfully set up the cluster. "
-        # Existing cluster detected
-        else:
-            # Get the difference in nodes
-            existing_nodes = set(get_nodes())
-            nodes_to_add = nodes_set - existing_nodes
-            nodes_to_remove = existing_nodes - nodes_set
-            # Add any missing nodes
-            if len(nodes_to_add) > 0:
-                result["changed"] = True
-                nodes_to_add = " ".join(nodes_to_add)
-                start_cluster()
-                if not module.check_mode:
-                    rc, out, err = module.run_command(commands[os][version]["add"] + nodes_to_add)
-                    if rc == 0:
-                        result["message"] += "Successfully added the following nodes to the cluster: " + nodes_to_add + ". "
-                    else:
-                        result["changed"] = False
-                        module.fail_json(msg="Failed to add the following nodes to the cluster: " + nodes_to_add, **result)
-            # Remove any extra nodes
-            elif len(nodes_to_remove) > 0:
-                # Warn that all nodes in cluster will be removed
-                if len(nodes_to_remove) == len(existing_nodes):
-                    module.fail_json(msg="No nodes will be left in the cluster. If you intend to destroy the whole cluster, run 'pcs cluster destroy --all' instead", **result)
-                else:
+                    result["message"] += "Successfully set up the cluster. "
+            # Existing cluster detected
+            else:
+                # Get the difference in nodes
+                existing_nodes = set(get_nodes())
+                nodes_to_add = nodes_set - existing_nodes
+                nodes_to_remove = existing_nodes - nodes_set
+                # Add any missing nodes
+                if len(nodes_to_add) > 0:
                     result["changed"] = True
-                    nodes_to_remove = " ".join(nodes_to_remove)
-                    stop_cluster()
+                    nodes_to_add = " ".join(nodes_to_add)
+                    start_cluster()
                     if not module.check_mode:
-                        rc, out, err = module.run_command(commands[os][version]["remove"] + nodes_to_remove)
+                        rc, out, err = module.run_command(commands[os][version]["add"] + nodes_to_add)
                         if rc == 0:
-                            result["message"] += "Successfully removed the following nodes from the cluster: " + nodes_to_remove + ". "
+                            result["message"] += "Successfully added the following nodes to the cluster: " + nodes_to_add + ". "
                         else:
                             result["changed"] = False
-                            module.fail_json(msg="Failed to remove the following nodes to the cluster: " + nodes_to_remove, **result)
-            # No difference, nothing to do
-            else:
-                result["message"] += "No changes needed: cluster is already set up with the nodes specified. "
-        # ensure cluster is started and all nodes online
-        nodes_online = get_nodes_online()
-        result["online_nodes"] = nodes_online
-        # Some nodes not online, failure
-        if len(nodes_online) != len(nodes_set):
-            module.fail_json(msg="The following nodes are not online: " + " ".join(nodes_set - nodes_online), **result)
-    # Remove the cluster (state == absent)
-    else:
-        # Cluster detected, destroy it
-        if corosync_conf_exists:
-            result["changed"] = True
-            if not module.check_mode:
-                rc, out, err = module.run_command(commands[os][version]["destroy"])
-                if rc == 0:
-                    result["message"] += "Succesfully destroyed the cluster. "
-                else:
-                    module.fail_json(msg="Failed to destroy the cluster", **result)
-        # No existing cluster, nothing to do
+                            module.fail_json(msg="Failed to add the following nodes to the cluster: " + nodes_to_add, **result)
+                # Remove any extra nodes
+                if len(nodes_to_remove) > 0:
+                    # Warn that all nodes in cluster will be removed
+                    if len(nodes_to_remove) == len(existing_nodes):
+                        module.fail_json(msg="No nodes will be left in the cluster. If you intend to destroy the whole cluster, re-run the module with state = absent", **result)
+                    else:
+                        result["changed"] = True
+                        nodes_to_remove = " ".join(nodes_to_remove)
+                        stop_cluster()
+                        if not module.check_mode:
+                            rc, out, err = module.run_command(commands[os][version]["remove"] + nodes_to_remove)
+                            if rc == 0:
+                                result["message"] += "Successfully removed the following nodes from the cluster: " + nodes_to_remove + ". "
+                            else:
+                                result["changed"] = False
+                                module.fail_json(msg="Failed to remove the following nodes to the cluster: " + nodes_to_remove, **result)
+                # No difference, nothing to do
+                if len(nodes_to_add) == 0 and len(nodes_to_remove) == 0:
+                    result["message"] += "No changes needed: cluster is already set up with the nodes specified. "
+            # ensure cluster is started and all nodes online
+            nodes_online = get_nodes_online()
+            result["online_nodes"] = nodes_online
+            # Some nodes not online, failure
+            if len(nodes_online) != len(nodes_set):
+                module.fail_json(msg="The following nodes are not online: " + " ".join(nodes_set - nodes_online), **result)
+        # Remove the cluster (state == absent)
         else:
-            result["message"] += "No changes needed: no clusters were detected. "
+            # Cluster detected, destroy it
+            if corosync_conf_exists:
+                result["changed"] = True
+                if not module.check_mode:
+                    rc, out, err = module.run_command(commands[os][version]["destroy"])
+                    if rc == 0:
+                        result["message"] += "Succesfully destroyed the cluster. "
+                    else:
+                        module.fail_json(msg="Failed to destroy the cluster", **result)
+            # No existing cluster, nothing to do
+            else:
+                result["message"] += "No changes needed: no clusters were detected. "
 
     # Success
     module.exit_json(**result)
