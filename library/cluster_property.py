@@ -113,10 +113,14 @@ def run_module():
     commands["Suse"  ]["property" ]["unset"]        = "crm configure property"
     commands["RedHat"]["attribute"]["unset"]        = "pcs node attribute %s %s=" % (node, name)
     commands["Suse"  ]["attribute"]["unset"]        = "crm node attribute %s delete %s" % (node, name)
-    commands["RedHat"]["property" ]["show"]         = "pcs property show %s | grep %s" % (name, name)
-    commands["Suse"  ]["property" ]["show"]         = "crm configure show type:property | grep %s=" % name
-    commands["RedHat"]["attribute"]["show"]         = "pcs node attribute --name %s | grep %s" % (name, node)
-    commands["Suse"  ]["attribute"]["show"]         = "crm node attribute %s show %s" % (node, name)
+    commands["RedHat"]["property" ]["get"]          = "sudo pcs property list --all | grep %s | awk -F'[:]' '{print $2}'" % name # Good
+    commands["Suse"  ]["property" ]["get"]          = "crm configure get_property %s" % name # GOOD
+    commands["RedHat"]["attribute"]["get"]          = "pcs node attribute --name %s | grep %s | awk -F'[=]' '{print $2}'" % (name, node) # GOOD
+    commands["Suse"  ]["attribute"]["get"]          = "sudo crm node show %s | grep %s | awk -F'[=]' '{print $2}'" % (node, name) # GOOD
+    commands["RedHat"]["property" ]["check"]        = "pcs property show %s | grep %s" % (name, name) # GOOD
+    commands["Suse"  ]["property" ]["check"]        = "crm configure show type:property | grep %s=" % name # GOOD
+    commands["RedHat"]["attribute"]["check"]        = "pcs node attribute --name %s | grep %s" % (name, node) # GOOD
+    commands["Suse"  ]["attribute"]["check"]        = "crm node attribute %s show %s" % (node, name) # GOOD
     commands["RedHat"]["property" ]["list"]         = "pcs property list"
     commands["Suse"  ]["property" ]["list"]         = "crm configure show type:property"
     commands["RedHat"]["attribute"]["list"]         = "pcs node attribute"
@@ -141,16 +145,21 @@ def run_module():
 
     # ==== Functions ====
 
-    # Check if a property or attribute (specified via 'type' parameter) is already set to desired value
-    def check_property():
-        rc, out, err = module.run_command(commands[os][ctype]["show"])
+    # Get the current property value
+    def get_property():
+        rc, out, err = module.run_command(commands[os][ctype]["get"])
         if rc != 0:
             return None
         else:
-            if commands[os][ctype]["contains"] in out:
-                return value
-            else:
-                return ""
+            return out
+    
+    # Check if a property value is set to something other than default
+    def check_property():
+        rc, out, err = module.run_command(commands[os][ctype]["check"])
+        if rc == 0:
+            return True
+        else:
+            return False
     
     def set_property():
         rc, out, err = module.run_command(commands[os][ctype]["set"])
@@ -172,8 +181,8 @@ def run_module():
 
     # Set property
     if state == "present":
-        # Property is not set or is set to wrong value
-        if check_property() != value:
+        # Property is not set to desired value
+        if get_property() != value:
             result["changed"] = True
             if not module.check_mode:
                 set_property()
@@ -183,7 +192,7 @@ def run_module():
     # Unset property
     else:
         # Property is set to something
-        if check_property() is not None:
+        if check_property():
             result["changed"] = True
             if not module.check_mode:
                 unset_property()
@@ -192,7 +201,7 @@ def run_module():
             result["message"] += "No changes needed: %s is not currently set. " % ctype
 
 
-    # SUCCESS STATEMENT
+    # Success
     module.exit_json(**result)
 
 

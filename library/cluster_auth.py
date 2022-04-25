@@ -117,7 +117,7 @@ def run_module():
             if rc != 0:
                 module.fail_json(msg="Failed to authenticate to node using command '" + cmd + "'", output=out, error=err)
 
-
+    # Success
     module.exit_json(**result)
 
 

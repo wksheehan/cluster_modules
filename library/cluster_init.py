@@ -172,7 +172,7 @@ def run_module():
     commands["Suse"  ]["all"]                   = {}
     commands["RedHat"]["7"  ]["setup"]          = "pcs cluster setup --name %s_cluster %s --token %s" % (sid, nodes, token)
     commands["RedHat"]["8"  ]["setup"]          = "pcs cluster setup %s_cluster %s totem token=%s" % (sid, nodes, token)
-    commands["Suse"  ]["all"]["setup"]          = "ha-cluster-init -y --name '%s_%s' --interface eth0 --no-overwrite-sshkey --nodes '%s'" % (prefix, sid, nodes)
+    commands["Suse"  ]["all"]["setup"]          = "ha-cluster-init -y --name '%s_%s' --interface eth0 --no-overwrite-sshkey --nodes '%s'" % (prefix, sid, nodes) # password needs to be configured and passed into command
     commands["RedHat"]["7"  ]["destroy"]        = "pcs cluster destroy"
     commands["RedHat"]["8"  ]["destroy"]        = "pcs cluster destroy"
     commands["Suse"  ]["all"]["destroy"]        = "crm cluster remove -y -c %s %s --force" # % (curr_node, " ".join(nodes_set))
