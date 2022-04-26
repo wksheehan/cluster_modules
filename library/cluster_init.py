@@ -219,7 +219,7 @@ def run_module():
         
     # Start a cluster on all nodes (for RedHat)
     def start_all():
-        nodes_online = get_nodes_online(10)
+        nodes_online = get_nodes_online(5)
         # Not all nodes are currently online
         if nodes_online != nodes_set:
             result["changed"] = True
@@ -256,7 +256,7 @@ def run_module():
         nodes_online = set()
         while seconds < timeout:
             # String containing which nodes are online
-            rc, out, err = module.run_command(commands[os][version]["online"])
+            rc, out, err = module.run_command(commands[os][version]["online"], use_unsafe_shell=True)
             # See which nodes are online
             for node in nodes_set:
                 if node in out:
@@ -265,8 +265,8 @@ def run_module():
             if nodes_online == nodes_set:
                 break
             # Atleast one node not online
-            sleep(10)
-            seconds += 10
+            sleep(5)
+            seconds += 5
         return nodes_online
 
     # Set up the cluster
@@ -373,7 +373,7 @@ def run_module():
         result["online_nodes"] = nodes_online
         # All nodes specified should be online
         if nodes_online != nodes_set:
-            module.fail_json(msg="The following nodes are not online: " + " ".join(nodes_set - nodes_online), **result)
+            module.fail_json(msg="Could not get all nodes online after 120s. The following nodes are not online: " + " ".join(nodes_set - nodes_online), **result)
     # Remove the cluster
     else:
         if corosync_conf_exists:

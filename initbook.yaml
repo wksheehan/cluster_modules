@@ -7,10 +7,15 @@
     - name: "Cluster init"
       cluster_init:
         os: "RedHat"
-        version: "7"
+        version: "8"
         state: present
         sid: "wills-sid-123"
         nodes: "x0rapp00leb7 x0rapp01leb7"
         tier: "hana"
         token: "30000"
+      register: resultobj
+      
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
       

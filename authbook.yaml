@@ -11,3 +11,8 @@
         nodes: "x0rapp00leb7 x0rapp01leb7"
         username: hacluster
         password: "TestPass123!"
+      register: resultobj
+      
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'

@@ -15,4 +15,9 @@
         - { name: 'concurrent-fencing', value: true }
         - { name: 'stonith-timeout', value: '900' }
         - { name: 'stonith-action', value: 'reboot' }
+      register: resultobj
+      
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
       

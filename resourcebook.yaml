@@ -14,4 +14,9 @@
         resource_type: auzre-events
         options: |
           op monitor interval=10s
+      register: resultobj
+      
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
       
