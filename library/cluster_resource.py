@@ -80,7 +80,7 @@ from ansible.module_utils.basic import AnsibleModule
 from distutils.spawn import find_executable
 import xml.etree.ElementTree as ET
 import uuid
-import tempfile
+import os as OS
 
 
 def run_module():
@@ -206,7 +206,7 @@ def run_module():
     # Updates an existing resource to match the configuration specified exactly
     def update_resource():
         # Make sure current cib exists
-        if not os.path.isfile(curr_cib_path):
+        if not OS.path.isfile(curr_cib_path):
             module.fail_json(msg="Unable to find CIB file for existing resource", **result)
 
         if os == "Suse":

@@ -108,6 +108,7 @@ from distutils.spawn import find_executable
 from time import sleep
 import re
 import socket
+import os as OS
 
 def run_module():
 
@@ -116,7 +117,7 @@ def run_module():
     module_args = dict(
         os=dict(required=True, choices=['RedHat', 'Suse']),
         version=dict(required=False),
-        operation=dict(required=True, choices=['present','absent']),
+        state=dict(required=True, choices=['present','absent']),
         sid=dict(required=False),
         existing_node=dict(required=False),
         nodes=dict(required=False),
@@ -154,7 +155,7 @@ def run_module():
     if os == "RedHat":
         if version is None:
             module.fail_json(msg="OS version must be specified when using RedHat", **result)
-        if curr_node != existing_node:
+        if existing_node is not None and curr_node != existing_node:
             module.fail_json(msg="Must configure the cluster from the current node when using RedHat", **result)
     if os == "Suse":
         version = "all"
@@ -195,9 +196,9 @@ def run_module():
     commands["RedHat"]["8"  ]["online"]         = "pcs status | grep '^  \* Online:'"
     commands["Suse"  ]["all"]["online"]         = "crm status | grep 'Online:'"
     commands["Suse"  ]["all"]["join"]           = "ha-cluster-join -y -c %s --interface eth0" % existing_node
-    commands["Redhat"]["regex"]                 = r"ring0_addr\s*:\s*([\w.-]+)\s*"
+    commands["RedHat"]["regex"]                 = r"ring0_addr\s*:\s*([\w.-]+)\s*"
     commands["Suse"  ]["regex"]                 = r"host\s*([\w.-]+);"
-    commands["Redhat"]["file"]                  = "/etc/corosync/corosync.conf"
+    commands["RedHat"]["file"]                  = "/etc/corosync/corosync.conf"
     commands["Suse"  ]["file"]                  = "/etc/csync2/csync2.cfg"
 
     
@@ -339,7 +340,7 @@ def run_module():
     # ==== Main code ====
 
     # Check if cluster configuration exists
-    corosync_conf_exists = os.path.isfile('/etc/corosync/corosync.conf')
+    corosync_conf_exists = OS.path.isfile('/etc/corosync/corosync.conf')
 
     # Create or modify the cluster
     if state == "present":
