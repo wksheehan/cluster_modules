@@ -163,20 +163,30 @@ def run_module():
             return False
     
     def set_property():
-        rc, out, err = module.run_command(commands[os][ctype]["set"])
-        if rc == 0:
-            result["message"] += "Successfully set " + name + " to " + value
-        else:
-            result["changed"] = False
-            module.fail_json(msg="Failed to set " + name + " to " + value, **result)
+        result["changed"] = True
+        if not module.check_mode:
+            cmd = commands[os][ctype]["set"]
+            rc, out, err = module.run_command(cmd)
+            if rc == 0:
+                result["message"] += "Successfully set " + name + " to " + value
+            else:
+                result["changed"] = False
+                result["stdout"] = out
+                result["command_used"] = cmd
+                module.fail_json(msg="Failed to set " + name + " to " + value, **result)
 
     def unset_property():
-        rc, out, err = module.run_command(commands[os][ctype]["unset"])
-        if rc == 0:
-            result["message"] += "Successfully unset " + name
-        else:
-            result["changed"] = False
-            module.fail_json(msg="Failed to unset " + name, **result)
+        result["changed"] = True
+        if not module.check_mode:
+            cmd = commands[os][ctype]["unset"]
+            rc, out, err = module.run_command(cmd)
+            if rc == 0:
+                result["message"] += "Successfully unset " + name
+            else:
+                result["changed"] = False
+                result["stdout"] = out
+                result["command_used"] = cmd
+                module.fail_json(msg="Failed to unset " + name, **result)
 
     # ==== Main code ====
 
@@ -184,9 +194,7 @@ def run_module():
     if state == "present":
         # Property is not set to desired value
         if get_property() != value:
-            result["changed"] = True
-            if not module.check_mode:
-                set_property()
+            set_property()
         # Property is already set to correct value
         else:
             result["message"] += "No changes needed: %s is already set. " % ctype
@@ -194,9 +202,7 @@ def run_module():
     else:
         # Property is set to something
         if check_property():
-            result["changed"] = True
-            if not module.check_mode:
-                unset_property()
+            unset_property()
         # Property is not currently set
         else:
             result["message"] += "No changes needed: %s is not currently set. " % ctype

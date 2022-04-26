@@ -115,52 +115,6 @@ def run_module():
     resource_type       = module.params['resource_type']
     options             = module.params['options']
 
-    class_provider_type = format_class_provider_type()
-    read_type           = "stonith" if resource_class == "stonith" else "resource"
-    curr_cib_path       = "/var/lib/pacemaker/cib/cib.xml"
-    new_cib_name        = "shadow-" + str(uuid.uuid4()) + ".xml"
-
-# TODO:
-# Clone creation (maybe separate module)
-# Master slave configuration check
-# Promotable status check
-# Is the option string ever different for Suse vs RedHat 7 vs RedHat 8?
-
-
-    # ==== Initial checks ====
-
-    if find_executable('pcs') is None:
-        module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
-    if state == "present" and resource_type is None:
-        module.fail_json(msg='Must specify resource_type when state is present' **result)
-    rc, out, err = module.run_command(commands[os]["status"])
-    if rc != 0:
-        module.fail_json(msg="Cluster is not running on current node!", **result)
-
-
-    # ==== Command dictionary ====
-
-    commands                                        = {}
-    commands["RedHat"]                              = {}
-    commands["Suse"  ]                              = {}
-    commands["Redhat"]["status"]                    = "pcs status"
-    commands["Suse"  ]["status"]                    = "crm status"
-    commands["Redhat"]["push_cib"]                  = "pcs cluster cib-push %s" # % new_cib_path
-    commands["Suse"  ]["push_cib"]                  = "crm -c %s cib commit"    # % new_cib_path
-    commands["RedHat"]["resource"]                  = {}
-    commands["Suse"  ]["resource"]                  = {}
-    commands["RedHat"]["resource"]["read"]          = f"pcs {read_type} config {name}" % (read_type, name)
-    commands["Suse"  ]["resource"]["read"]          = f"crm config show {name}" 
-    commands["RedHat"]["resource"]["create"]        = f"pcs {read_type} create {name} {class_provider_type} {options}"
-    commands["Suse"  ]["resource"]["create"]        = f"crm configure primitive {name} {class_provider_type} {options}"
-    commands["Redhat"]["resource"]["update"]        = f"pcs -f {new_cib_name} {read_type} create {name} {class_provider_type} {options}"
-    commands["Suse"  ]["resource"]["update"]        = f"crm -F -c {new_cib_name} configure primitive {name} {class_provider_type} {options}"
-    commands["RedHat"]["resource"]["delete"]        = f"pcs resource delete {name}"
-    commands["Suse"  ]["resource"]["delete"]        = f"crm configure delete --force {name}"
-    
-
-    # ==== Functions ====
-    
     # Formats the class:provider:type parameter for cluster creation
     def format_class_provider_type():
         class_provider_type = ""
@@ -173,6 +127,50 @@ def run_module():
         if resource_class or resource_provider or resource_type:
             class_provider_type = class_provider_type[:-1]
         return class_provider_type
+
+    class_provider_type = format_class_provider_type()
+    read_type           = "stonith" if resource_class == "stonith" else "resource"
+    curr_cib_path       = "/var/lib/pacemaker/cib/cib.xml"
+    new_cib_name        = "shadow-" + str(uuid.uuid4()) + ".xml"
+
+# TODO:
+# Clone creation (maybe separate module)
+# Master slave configuration check
+# Promotable status check
+# Is the option string ever different for Suse vs RedHat 7 vs RedHat 8?
+
+
+    # ==== Command dictionary ====
+
+    commands                                        = {}
+    commands["RedHat"]                              = {}
+    commands["Suse"  ]                              = {}
+    commands["RedHat"]["status"]                    = "pcs status"
+    commands["Suse"  ]["status"]                    = "crm status"
+    commands["RedHat"]["push_cib"]                  = "pcs cluster cib-push %s" # % new_cib_path
+    commands["Suse"  ]["push_cib"]                  = "crm -c %s cib commit"    # % new_cib_path
+    commands["RedHat"]["resource"]                  = {}
+    commands["Suse"  ]["resource"]                  = {}
+    commands["RedHat"]["resource"]["read"]          = f"pcs {read_type} config {name}"
+    commands["Suse"  ]["resource"]["read"]          = f"crm config show {name}" 
+    commands["RedHat"]["resource"]["create"]        = f"pcs {read_type} create {name} {class_provider_type} {options}"
+    commands["Suse"  ]["resource"]["create"]        = f"crm configure primitive {name} {class_provider_type} {options}"
+    commands["RedHat"]["resource"]["update"]        = f"pcs -f {new_cib_name} {read_type} create {name} {class_provider_type} {options}"
+    commands["Suse"  ]["resource"]["update"]        = f"crm -F -c {new_cib_name} configure primitive {name} {class_provider_type} {options}"
+    commands["RedHat"]["resource"]["delete"]        = f"pcs resource delete {name}"
+    commands["Suse"  ]["resource"]["delete"]        = f"crm configure delete --force {name}"
+    
+    # ==== Initial checks ====
+
+    if find_executable('pcs') is None:
+        module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
+    if state == "present" and resource_type is None:
+        module.fail_json(msg='Must specify resource_type when state is present' **result)
+    rc, out, err = module.run_command(commands[os]["status"])
+    if rc != 0:
+        module.fail_json(msg="Cluster is not running on current node!", **result)
+
+    # ==== Functions ====
     
     # Returns true if a resource with the given name exists
     def resource_exists():
@@ -186,22 +184,28 @@ def run_module():
     def create_resource():
         result["changed"] = True
         if not module.check_mode:
-            rc, out, err = module.run_command(commands[os]["resource"]["create"])
+            cmd = commands[os]["resource"]["create"]
+            rc, out, err = module.run_command(cmd)
             if rc == 0:
                 result["message"] += "Resource was successfully created. "
             else:
                 result["changed"] = False
+                result["stdout"] = out
+                result["command_used"] = cmd
                 module.fail_json(msg="Failed to create the resource", **result)
     
     # Deletes an existing resource
     def remove_resource():
         result["changed"] = True
         if not module.check_mode:
-            rc, out, err = module.run_command(commands[os]["resource"]["delete"])
+            cmd = commands[os]["resource"]["delete"]
+            rc, out, err = module.run_command(cmd)
             if rc == 0:
                 result["message"] += "Resource was successfully removed. "
             else:
                 result["changed"] = False
+                result["stdout"] = out
+                result["command_used"] = cmd
                 module.fail_json(msg="Failed to remove the resource", **result)
 
     # Updates an existing resource to match the configuration specified exactly
@@ -243,12 +247,15 @@ def run_module():
                 curr_resource[:] = new_resource[:]
                 # Write the new XML to shadow cib / temporary cib file
                 updated_xml=ET.ElementTree(curr_cib.getroot())                                  # Get the updated xml
-                updated_xml.write(new_cib_path)                                                 # Write the xml to the temporary (shadow) cib
-                rc, out, err = module.run_command(commands[os]["push_cib"] % new_cib_path)   # Update the live cluster
+                updated_xml.write(new_cib_path)                                       # Write the xml to the temporary (shadow) cib
+                cmd = commands[os]["push_cib"] % new_cib_path
+                rc, out, err = module.run_command(cmd)   # Update the live cluster
                 if rc == 0:
                     result["message"] += "Successfully updated the resource. "
                 else:
                     result["changed"] = False
+                    result["stdout"] = out
+                    result["command_used"] = cmd
                     module.fail_json(msg="Failed to update the resource", **result)
         # No differences
         else:
