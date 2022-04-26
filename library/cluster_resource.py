@@ -103,7 +103,8 @@ def run_module():
     )
 
     result = dict(
-        changed=False
+        changed=False,
+        message=""
     )
 
     os                  = module.params['os']

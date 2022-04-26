@@ -84,7 +84,8 @@ def run_module():
     )
 
     result = dict(
-        changed=False
+        changed=False,
+        message=""
     )
 
     # capture inputs

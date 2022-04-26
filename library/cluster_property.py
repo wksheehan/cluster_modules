@@ -85,7 +85,8 @@ def run_module():
     )
 
     result = dict(
-        changed=False
+        changed=False,
+        message=""
     )
 
     os      = module.params['os']
@@ -113,10 +114,10 @@ def run_module():
     commands["Suse"  ]["property" ]["unset"]        = "crm configure property"
     commands["RedHat"]["attribute"]["unset"]        = "pcs node attribute %s %s=" % (node, name)
     commands["Suse"  ]["attribute"]["unset"]        = "crm node attribute %s delete %s" % (node, name)
-    commands["RedHat"]["property" ]["get"]          = "sudo pcs property list --all | grep %s | awk -F'[:]' '{print $2}'" % name # Good
+    commands["RedHat"]["property" ]["get"]          = "pcs property list --all | grep %s | awk -F'[:]' '{print $2}' | tr -d '[:space:]'" % name # Good, but if the value contains spaces there will be an issue during equality comparison
     commands["Suse"  ]["property" ]["get"]          = "crm configure get_property %s" % name # GOOD
-    commands["RedHat"]["attribute"]["get"]          = "pcs node attribute --name %s | grep %s | awk -F'[=]' '{print $2}'" % (name, node) # GOOD
-    commands["Suse"  ]["attribute"]["get"]          = "sudo crm node show %s | grep %s | awk -F'[=]' '{print $2}'" % (node, name) # GOOD
+    commands["RedHat"]["attribute"]["get"]          = "pcs node attribute --name %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (name, node) # GOOD
+    commands["Suse"  ]["attribute"]["get"]          = "crm node show %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (node, name) # GOOD
     commands["RedHat"]["property" ]["check"]        = "pcs property show %s | grep %s" % (name, name) # GOOD
     commands["Suse"  ]["property" ]["check"]        = "crm configure show type:property | grep %s=" % name # GOOD
     commands["RedHat"]["attribute"]["check"]        = "pcs node attribute --name %s | grep %s" % (name, node) # GOOD
@@ -147,7 +148,7 @@ def run_module():
 
     # Get the current property value
     def get_property():
-        rc, out, err = module.run_command(commands[os][ctype]["get"])
+        rc, out, err = module.run_command(commands[os][ctype]["get"], use_unsafe_shell=True)
         if rc != 0:
             return None
         else:
@@ -155,7 +156,7 @@ def run_module():
     
     # Check if a property value is set to something other than default
     def check_property():
-        rc, out, err = module.run_command(commands[os][ctype]["check"])
+        rc, out, err = module.run_command(commands[os][ctype]["check"], use_unsafe_shell=True)
         if rc == 0:
             return True
         else:

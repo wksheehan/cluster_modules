@@ -210,11 +210,14 @@ def run_module():
         if rc != 0:
             result["changed"] = True
             if not module.check_mode:
-                rc, out, err = module.run_command(commands[os][version]["start"])
+                cmd = commands[os][version]["start"]
+                rc, out, err = module.run_command(cmd)
                 if rc == 0:
                     result["message"] += "Successfully started the cluster. "
                 else:
                     result["changed"] = False
+                    result["stdout"] = out
+                    result["command_used"] = cmd
                     module.fail_json(msg="Error starting the cluster", **result)
         
     # Start a cluster on all nodes (for RedHat)
@@ -224,11 +227,14 @@ def run_module():
         if nodes_online != nodes_set:
             result["changed"] = True
             if not module.check_mode:
-                rc, out, err = module.run_command(commands[os][version]["start"] + " --all")
+                cmd = commands[os][version]["start"] + " --all"
+                rc, out, err = module.run_command(cmd)
                 if rc == 0:
                     result["message"] += "Started the cluster on all nodes (RedHat). "
                 else:
                     result["changed"] = False
+                    result["stdout"] = out
+                    result["command_used"] = cmd
                     module.fail_json(msg="Error starting the cluster", **result)
     
     # Stop a cluster on the current node
@@ -237,11 +243,14 @@ def run_module():
         if rc == 0:
             result["changed"] = True
             if not module.check_mode:
-                rc, out, err = module.run_command(commands[os][version]["stop"])
+                cmd = commands[os][version]["stop"]
+                rc, out, err = module.run_command(cmd)
                 if rc == 0:
                     result["message"] += "Successfully stopped the cluster. "
                 else:
                     result["changed"] = False
+                    result["stdout"] = out
+                    result["command_used"] = cmd
                     module.fail_json(msg="Error stopping the cluster", **result)
 
     # Get set of existing nodes in the cluster configuration
@@ -277,21 +286,27 @@ def run_module():
                 module.fail_json(msg="Must supply sid when setting up new cluster", **result)
             if os == "Suse" and tier is None:
                 module.fail_json(msg="Must supply tier when setting up a new Suse cluster", **result)
-            rc, out, err = module.run_command(commands[os][version]["setup"])
+            cmd = commands[os][version]["setup"]
+            rc, out, err = module.run_command(cmd)
             if rc == 0:
                 result["message"] += "Successfully set up the cluster. "
             else:
                 result["changed"] = False
+                result["stdout"] = out
+                result["command_used"] = cmd
                 module.fail_json(msg="Failed to set up the cluster", **result)
     
     def join_cluster():
         result["changed"] = True
         if not module.check_mode:
-            rc, out, err = module.run_command(commands[os][version]["join"])
+            cmd = commands[os][version]["join"]
+            rc, out, err = module.run_command(cmd)
             if rc == 0:
                 result["message"] += curr_node + " successfully joined the cluster. "
             else:
                 result["changed"] = False
+                result["stdout"] = out
+                result["command_used"] = cmd
                 module.fail_json(msg="Failed to join existing cluster", **result)
     
     def add_nodes(nodes):
@@ -299,11 +314,14 @@ def run_module():
         if not module.check_mode:
             start_cluster()
             nodes_to_add = " ".join(nodes)
-            rc, out, err = module.run_command(commands[os][version]["add"] + nodes_to_add)
+            cmd = commands[os][version]["add"] + nodes_to_add
+            rc, out, err = module.run_command(cmd)
             if rc == 0:
                 result["message"] += "Successfully added the following nodes to the cluster: " + nodes_to_add + ". "
             else:
                 result["changed"] = False
+                result["stdout"] = out
+                result["command_used"] = cmd
                 module.fail_json(msg="Failed to add the following nodes to the cluster: " + nodes_to_add, **result)
 
     def remove_nodes(nodes):
@@ -315,11 +333,14 @@ def run_module():
                 nodes_to_remove = " ".join(nodes - set(curr_node)) + " " + curr_node
             else:
                 nodes_to_remove = " ".join(nodes)
-            rc, out, err = module.run_command(commands[os][version]["remove"] % nodes_to_remove)
+            cmd = commands[os][version]["remove"] % nodes_to_remove
+            rc, out, err = module.run_command(cmd)
             if rc == 0:
                 result["message"] += "Successfully removed the following nodes from the cluster: " + nodes_to_remove + ". "
             else:
                 result["changed"] = False
+                result["stdout"] = out
+                result["command_used"] = cmd
                 module.fail_json(msg="Failed to remove the following nodes to the cluster: " + nodes_to_remove, **result)
 
     def destroy_cluster():
@@ -334,6 +355,8 @@ def run_module():
                 result["message"] += "Succesfully destroyed the cluster. "
             else:
                 result["changed"] = False
+                result["stdout"] = out
+                result["command_used"] = cmd
                 module.fail_json(msg="Failed to destroy the cluster", **result)
 
 
@@ -366,14 +389,15 @@ def run_module():
             # Configuration is as desired
             if len(nodes_to_add) == 0 and len(nodes_to_remove) == 0:
                 result["message"] += "No changes needed: cluster is already set up with the nodes specified. "
-        # Ensure cluster is started
-        start_all() if os == "RedHat" else start_cluster()
-        # Wait for all nodes to go online
-        nodes_online = get_nodes_online(120)
-        result["online_nodes"] = nodes_online
-        # All nodes specified should be online
-        if nodes_online != nodes_set:
-            module.fail_json(msg="Could not get all nodes online after 120s. The following nodes are not online: " + " ".join(nodes_set - nodes_online), **result)
+        if not module.check_mode:
+            # Ensure cluster is started
+            start_all() if os == "RedHat" else start_cluster()
+            # Wait for all nodes to go online
+            nodes_online = get_nodes_online(120)
+            result["online_nodes"] = nodes_online
+            # All nodes specified should be online
+            if nodes_online != nodes_set:
+                module.fail_json(msg="Could not get all nodes online after 120s. The following nodes are not online: " + " ".join(nodes_set - nodes_online), **result)
     # Remove the cluster
     else:
         if corosync_conf_exists:
