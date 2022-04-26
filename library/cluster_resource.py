@@ -56,25 +56,11 @@ options:
         choices: ['azure-events', 'fence_azure_arm', 'IPaddr2',...]
         required: false
         type: str
-    instance_attributes:
+    options:
         description:
-            - provide the exact resource options desired for the resource
-            - module will add or remove any options necessary in order to configure the resource with exactly these options
-            - string containing space-separated list of key=value
-        required: false
-        type: str
-    operations:
-        description:
-            - defines the operation options for the resource
-            - module will add or remove any options necessary in order to configure the resource with exactly these options
-            - string containing space-separated list of key=value
-        required: false
-        type: str
-    meta_attributes:
-        description:
-            - defines the operation options for the resource
-            - module will add or remove any options necessary in order to configure the resource with exactly these options
-            - string containing space-separated list of key=value
+            - the instance attributes, operations, and meta attributes for the resource
+            - specify the exact list you wish to be present
+            - the module will add or remove any extraneous parameters necessary
         required: false
         type: str
 author:
@@ -108,9 +94,7 @@ def run_module():
         resource_class=dict(required=False, default=""),
         resource_provider=dict(required=False, default=""),
         resource_type=dict(required=False),
-        instance_attributes=dict(required=False, default=""),
-        operations=dict(required=False, default=""),
-        meta_attributes=dict(required=False, default="")
+        options=dict(required=False, default="")
     )
 
     module = AnsibleModule(
@@ -128,12 +112,9 @@ def run_module():
     resource_class      = module.params['resource_class']
     resource_provider   = module.params['resource_provider']
     resource_type       = module.params['resource_type']
-    instance_attributes = module.params['instance_attributes']
-    operations          = module.params['operations']
-    meta_attributes     = module.params['meta_attributes']
+    options             = module.params['options']
 
     class_provider_type = format_class_provider_type()
-    all_options         = create_option_string()
     read_type           = "stonith" if resource_class == "stonith" else "resource"
     curr_cib_path       = "/var/lib/pacemaker/cib/cib.xml"
     new_cib_name        = "shadow-" + str(uuid.uuid4()) + ".xml"
@@ -169,27 +150,15 @@ def run_module():
     commands["Suse"  ]["resource"]                  = {}
     commands["RedHat"]["resource"]["read"]          = f"pcs {read_type} config {name}" % (read_type, name)
     commands["Suse"  ]["resource"]["read"]          = f"crm config show {name}" 
-    commands["RedHat"]["resource"]["create"]        = f"pcs {read_type} create {name} {class_provider_type} {all_options}"
-    commands["Suse"  ]["resource"]["create"]        = f"crm configure primitive {name} {class_provider_type} {all_options}"
-    commands["Redhat"]["resource"]["update"]        = f"pcs -f {new_cib_name} {read_type} create {name} {class_provider_type} {all_options}"
-    commands["Suse"  ]["resource"]["update"]        = f"crm -F -c {new_cib_name} configure primitive {name} {class_provider_type} {all_options}"
+    commands["RedHat"]["resource"]["create"]        = f"pcs {read_type} create {name} {class_provider_type} {options}"
+    commands["Suse"  ]["resource"]["create"]        = f"crm configure primitive {name} {class_provider_type} {options}"
+    commands["Redhat"]["resource"]["update"]        = f"pcs -f {new_cib_name} {read_type} create {name} {class_provider_type} {options}"
+    commands["Suse"  ]["resource"]["update"]        = f"crm -F -c {new_cib_name} configure primitive {name} {class_provider_type} {options}"
     commands["RedHat"]["resource"]["delete"]        = f"pcs resource delete {name}"
     commands["Suse"  ]["resource"]["delete"]        = f"crm configure delete --force {name}"
     
 
     # ==== Functions ====
-
-    # Combines all options into one string for resource creation
-    def create_option_string():
-        option_string = ""
-        if instance_attributes is not None and len(instance_attributes) > 0:
-            option_string += instance_attributes + " "
-        if operations is not None and len(operations) > 0:
-            option_string += operations + " "
-        if meta_attributes is not None and len(meta_attributes) > 0:
-            option_string += meta_attributes
-
-        return option_string
     
     # Formats the class:provider:type parameter for cluster creation
     def format_class_provider_type():
