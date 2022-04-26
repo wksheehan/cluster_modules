@@ -1,0 +1,12 @@
+
+- hosts: localhost
+  name: "Cluster auth testing"
+  tasks:
+
+  - name: "Cluster auth"
+    cluster_auth:
+      os: "RedHat"
+      version: "8"
+      nodes: "x0rapp00leb7 x0rapp01leb7"
+      username: hacluster
+      password: "TestPass123!"
