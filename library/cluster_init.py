@@ -348,8 +348,8 @@ def run_module():
         if not module.check_mode:
             cmd = commands[os][version]["destroy"]
             if os == "Suse":
-                nodes_set = nodes_set - set(curr_node)
-                cmd = cmd % (curr_node, " ".join(nodes_set))
+                other_nodes = nodes_set - {curr_node}
+                cmd = cmd % (curr_node, " ".join(other_nodes))
             rc, out, err = module.run_command(cmd)
             if rc == 0:
                 result["message"] += "Succesfully destroyed the cluster. "
