@@ -134,7 +134,7 @@ def run_module():
 
     # ==== Initial checks ====
 
-    if find_executable('pcs') is None:
+    if os == "RedHat" and find_executable('pcs') is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     if state == "present" and value is None:
         module.fail_json(msg="value parameter must be supplied when state is present")

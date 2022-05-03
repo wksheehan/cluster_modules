@@ -6,16 +6,16 @@
   tasks:
     - name: "Cluster resource"
       cluster_resource:
-        os: "RedHat"
+        os: "{{ ansible_os_family }}"
         state: present
         name: rsc_azure-events
         resource_class: ocf
         resource_provider: heartbeat
-        resource_type: auzre-events
+        resource_type: azure-events
         options: |
           op monitor interval=10s
       register: resultobj
-      
+
     - name: Dump the result object
       debug:
         msg: '{{ resultobj }}'

@@ -150,9 +150,9 @@ def run_module():
 
     # ==== Initial checks ====
 
-    if find_executable('pcs') is None:
-        module.fail_json(msg="'pcs' executable not found. Install 'pcs'.", **result)
     if os == "RedHat":
+        if find_executable('pcs') is None:
+            module.fail_json(msg="'pcs' executable not found. Install 'pcs'.", **result)
         if version is None:
             module.fail_json(msg="OS version must be specified when using RedHat", **result)
         if existing_node is not None and curr_node != existing_node:

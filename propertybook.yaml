@@ -6,7 +6,7 @@
   tasks:
     - name: "Cluster property"
       cluster_property:
-        os: "RedHat"
+        os: "{{ ansible_os_family }}"
         state: present
         name: "{{ item.name }}"
         value: "{{ item.value }}"

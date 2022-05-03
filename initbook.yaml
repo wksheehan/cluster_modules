@@ -6,7 +6,7 @@
   tasks:
     - name: "Cluster init"
       cluster_init:
-        os: "RedHat"
+        os: "{{ ansible_os_family }}"
         version: "8"
         state: present
         sid: "wills-sid-123"

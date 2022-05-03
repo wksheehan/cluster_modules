@@ -162,7 +162,7 @@ def run_module():
     
     # ==== Initial checks ====
 
-    if find_executable('pcs') is None:
+    if os == "RedHat" and find_executable('pcs') is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     if state == "present" and resource_type is None:
         module.fail_json(msg='Must specify resource_type when state is present' **result)

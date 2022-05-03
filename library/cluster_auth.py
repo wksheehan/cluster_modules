@@ -98,7 +98,7 @@ def run_module():
     # initial validation checks
     # add one checking version matches os
     
-    if find_executable('pcs') is None:
+    if os == "RedHat" and find_executable('pcs') is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     
     rc, out, err = module.run_command('pcs cluster pcsd-status %s' % nodes)
