@@ -296,6 +296,7 @@ def run_module():
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to set up the cluster", **result)
     
+    # Current node joins a cluster running on another node (Suse)
     def join_cluster():
         result["changed"] = True
         if not module.check_mode:
@@ -309,6 +310,7 @@ def run_module():
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to join existing cluster", **result)
     
+    # Adds external nodes to existing cluster running on current node
     def add_nodes(nodes):
         result["changed"] = True
         if not module.check_mode:
@@ -324,13 +326,14 @@ def run_module():
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to add the following nodes to the cluster: " + nodes_to_add, **result)
 
+    # Delete nodes from existing cluster
     def remove_nodes(nodes):
         result["changed"] = True
         if not module.check_mode:
             if os == "RedHat":
                 stop_cluster()
             if curr_node in nodes:
-                nodes_to_remove = " ".join(nodes - set(curr_node)) + " " + curr_node
+                nodes_to_remove = " ".join(nodes - {curr_node}) + " " + curr_node
             else:
                 nodes_to_remove = " ".join(nodes)
             cmd = commands[os][version]["remove"] % nodes_to_remove
@@ -340,15 +343,17 @@ def run_module():
             else:
                 result["changed"] = False
                 result["stdout"] = out
+                result["error"] = err
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to remove the following nodes to the cluster: " + nodes_to_remove, **result)
 
+    # Destroy an entire cluster configuration on all nodes
     def destroy_cluster():
         result["changed"] = True
         if not module.check_mode:
             cmd = commands[os][version]["destroy"]
             if os == "Suse":
-                other_nodes = nodes_set - {curr_node}
+                other_nodes = get_nodes() - {curr_node}
                 cmd = cmd % (curr_node, " ".join(other_nodes))
             rc, out, err = module.run_command(cmd)
             if rc == 0:
