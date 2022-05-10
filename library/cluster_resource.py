@@ -81,6 +81,7 @@ from distutils.spawn import find_executable
 import xml.etree.ElementTree as ET
 import uuid
 import os as OS
+import tempfile
 
 
 def run_module():
@@ -275,18 +276,18 @@ def run_module():
     # Returns 1 (True) if there is a difference, 0 (False) if not
     def compare_resources(resource1, resource2):
         # Write the resource xml to a file
-        resource1_file_path = 'tmpfile1.xml'
-        resource2_file_path = 'tmpfile2.xml'
-        resourcefile1 = open(resource1_file_path, 'w')
-        resourcefile2 = open(resource2_file_path, 'w')
-        resourcefile1.write(ET.tostring(resource1))
-        resourcefile2.write(ET.tostring(resource2))
-
+        r1_file_fd, r1_file_path = tempfile.mkstemp()
+        r2_file_fd, r2_file_path = tempfile.mkstemp()
+        r1_file = open(r1_file_path, 'w')
+        r2_file = open(r2_file_path, 'w')
+        r1_file.write(ET.tostring(resource1, "unicode"))
+        r2_file.write(ET.tostring(resource2, "unicode"))
+        
         # Compare difference
-        rc, diff = module.run_command(f"diff {resource1_file_path} {resource2_file_path}")
+        rc, diff, err = module.run_command(f"diff {r1_file_path} {r2_file_path}")
 
         # Delete temporary files
-        module.run_command(f"rm -f {resource1_file_path} {resource2_file_path}")
+        module.run_command(f"rm -f {r1_file_path} {r2_file_path}")
 
         return rc
 
