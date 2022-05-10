@@ -282,26 +282,11 @@ def run_module():
         r2_file = open(r2_file_path, 'w')
         r1_file.write(ET.tostring(resource1, "unicode"))
         r2_file.write(ET.tostring(resource2, "unicode"))
+        r1_file.close()
+        r2_file.close()
         
         # Compare difference
         rc, diff, err = module.run_command(f"diff {r1_file_path} {r2_file_path}")
-
-        # Tests for why diff command not working
-        aa, bb, cc = module.run_command("dir")
-        result["test_dir"] = bb
-        result["test_dir_cmd"] = "dir"
-
-        aa, bb, cc = module.run_command("dir /tmp/")
-        result["test_dir_tmp"] = bb
-        result["test_dir_tmp_cmd"] = "dir /tmp/"
-        
-        aa, bb, cc = module.run_command("diff authbook.yaml initbook.yaml")
-        result["test_dir"] = bb
-        result["test_dir_cmd"] = "diff authbook.yaml initbook.yaml"
-
-        aa, bb, cc = module.run_command(f"cat /tmp/{r1_file_path}")
-        result["test_dir_tmp"] = bb
-        result["test_dir_tmp_cmd"] = f"cat /tmp/{r1_file_path}"
 
         # Delete temporary files
         module.run_command(f"rm -f {r1_file_path} {r2_file_path}")
