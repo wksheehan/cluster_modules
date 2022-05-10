@@ -147,6 +147,8 @@ def run_module():
     commands["Suse"  ]                              = {}
     commands["RedHat"]["status"]                    = "pcs status"
     commands["Suse"  ]["status"]                    = "crm status"
+    commands["RedHat"]["cib"]                       = {}
+    commands["Suse"  ]["cib"]                       = {}
     commands["RedHat"]["cib"]["push"]               = "pcs cluster cib-push %s" # % new_cib_name
     commands["Suse"  ]["cib"]["push"]               = "crm cib commit %s"    # % new_cib_name
     commands["RedHat"]["cib"]["delete"]             = "rm -f %s" # % new_cib_name
