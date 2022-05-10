@@ -131,7 +131,7 @@ def run_module():
     class_provider_type = format_class_provider_type()
     read_type           = "stonith" if resource_class == "stonith" else "resource"
     curr_cib_path       = "/var/lib/pacemaker/cib/cib.xml"
-    new_cib_name        = "shadow-" + str(uuid.uuid4()) + ".xml"
+    new_cib_name        = "shadow-cib" + str(uuid.uuid4())
 
 # TODO:
 # Clone creation (maybe separate module)
@@ -147,8 +147,10 @@ def run_module():
     commands["Suse"  ]                              = {}
     commands["RedHat"]["status"]                    = "pcs status"
     commands["Suse"  ]["status"]                    = "crm status"
-    commands["RedHat"]["push_cib"]                  = "pcs cluster cib-push %s" # % new_cib_path
-    commands["Suse"  ]["push_cib"]                  = "crm -c %s cib commit"    # % new_cib_path
+    commands["RedHat"]["cib"]["push"]               = "pcs cluster cib-push %s" # % new_cib_name
+    commands["Suse"  ]["cib"]["push"]               = "crm cib commit %s"    # % new_cib_name
+    commands["RedHat"]["cib"]["delete"]             = "rm -f %s" # % new_cib_name
+    commands["Suse"  ]["cib"]["delete"]             = "crm cib delete %s"    # % new_cib_name
     commands["RedHat"]["resource"]                  = {}
     commands["Suse"  ]["resource"]                  = {}
     commands["RedHat"]["resource"]["read"]          = f"pcs {read_type} config {name}"
@@ -225,7 +227,7 @@ def run_module():
         if rc != 0:
             module.fail_json(msg="Error creating resource using the temporary (shadow) cib file", **result)
         
-        new_cib_path = f"/var/lib/pacemaker/cib/{new_cib_name}" if os == "Suse" else f"./{new_cib_name}"
+        new_cib_path = f"/var/lib/pacemaker/cib/shadow.{new_cib_name}" if os == "Suse" else f"./{new_cib_name}"
 
         # Get the current and new resource XML objects
         curr_cib        = ET.parse(curr_cib_path)
@@ -245,11 +247,14 @@ def run_module():
                 curr_resource.tag = new_resource.tag
                 curr_resource.attrib = new_resource.attrib
                 curr_resource[:] = new_resource[:]
+                
                 # Write the new XML to shadow cib / temporary cib file
-                updated_xml=ET.ElementTree(curr_cib.getroot())                                  # Get the updated xml
-                updated_xml.write(new_cib_path)                                       # Write the xml to the temporary (shadow) cib
-                cmd = commands[os]["push_cib"] % new_cib_path
-                rc, out, err = module.run_command(cmd)   # Update the live cluster
+                updated_xml=ET.ElementTree(curr_cib.getroot()) # Get the updated xml
+                updated_xml.write(new_cib_path)  # Write the xml to the temporary (shadow) cib
+
+                # Update the live cluster
+                cmd = commands[os]["cib"]["push"] % new_cib_name
+                rc, out, err = module.run_command(cmd)
                 if rc == 0:
                     result["message"] += "Successfully updated the resource. "
                 else:
@@ -260,10 +265,28 @@ def run_module():
         # No differences
         else:
             result["message"] += "No updates necessary: resource already configured as desired. "
-    
-    def compare_resources(resource1, resource2):
-        print()
 
+        # Delete shadow configuration
+        rc, out, err = module.run_command(commands[os]["cib"]["delete"] % new_cib_name)
+    
+    # Compare two primitive object xmls for differences
+    # Returns 1 (True) if there is a difference, 0 (False) if not
+    def compare_resources(resource1, resource2):
+        # Write the resource xml to a file
+        resource1_file_path = 'tmpfile1.xml'
+        resource2_file_path = 'tmpfile2.xml'
+        resourcefile1 = open(resource1_file_path, 'w')
+        resourcefile2 = open(resource2_file_path, 'w')
+        resourcefile1.write(ET.tostring(resource1))
+        resourcefile2.write(ET.tostring(resource2))
+
+        # Compare difference
+        rc, diff = module.run_command(f"diff {resource1_file_path} {resource2_file_path}")
+
+        # Delete temporary files
+        module.run_command(f"rm -f {resource1_file_path} {resource2_file_path}")
+
+        return rc
 
     # ==== Main code ====
 
