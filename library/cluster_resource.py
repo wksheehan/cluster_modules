@@ -92,8 +92,8 @@ def run_module():
         os=dict(required=True, choices=['RedHat', 'Suse']),
         state=dict(required=False, default="present", choices=['present', 'absent']),
         name=dict(required=True),
-        resource_class=dict(required=False, default=""),
-        resource_provider=dict(required=False, default=""),
+        resource_class=dict(required=False),
+        resource_provider=dict(required=False),
         resource_type=dict(required=False),
         options=dict(required=False, default="")
     )
@@ -127,6 +127,8 @@ def run_module():
             class_provider_type += resource_type + ":"
         if resource_class or resource_provider or resource_type:
             class_provider_type = class_provider_type[:-1]
+        if resource_class == "stonith" and os == "RedHat":
+            class_provider_type = resource_type
         return class_provider_type
 
     class_provider_type = format_class_provider_type()
@@ -196,6 +198,7 @@ def run_module():
             else:
                 result["changed"] = False
                 result["stdout"] = out
+                result["error_message"] = err
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to create the resource", **result)
     
@@ -210,6 +213,7 @@ def run_module():
             else:
                 result["changed"] = False
                 result["stdout"] = out
+                result["error_message"] = err
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to remove the resource", **result)
 
@@ -263,6 +267,7 @@ def run_module():
                 else:
                     result["changed"] = False
                     result["stdout"] = out
+                    result["error_message"] = err
                     result["command_used"] = cmd
                     module.fail_json(msg="Failed to update the resource", **result)
         # No differences
