@@ -152,7 +152,7 @@ def run_module():
     commands["Suse"  ]["status"]                    = "crm status"
     commands["RedHat"]["cib"]                       = {}
     commands["Suse"  ]["cib"]                       = {}
-    commands["RedHat"]["cib"]["push"]               = "pcs cluster cib-push %s" # % new_cib_name
+    commands["RedHat"]["cib"]["push"]               = "pcs cluster cib-push --config %s" # % new_cib_name
     commands["Suse"  ]["cib"]["push"]               = "crm cib commit %s"    # % new_cib_name
     commands["RedHat"]["cib"]["delete"]             = "rm -f %s" # % new_cib_name
     commands["Suse"  ]["cib"]["delete"]             = "crm cib delete %s"    # % new_cib_name
@@ -224,14 +224,22 @@ def run_module():
             module.fail_json(msg="Unable to find CIB file for existing resource", **result)
 
         if os == "Suse":
-            # Create an empty shadow cib file
-            rc, out, err = module.run_command("crm cib new %s empty" % new_cib_name)
+            # Need to initialize an empty shadow cib file in os == Suse case
+            cmd = "crm cib new %s empty" % new_cib_name
+            rc, out, err = module.run_command(cmd)
             if rc != 0:
+                result["stdout"] = out
+                result["error_message"] = err
+                result["command_used"] = cmd
                 module.fail_json(msg="Error creating shadow cib file before updating resource", **result)
         
         # Create the desired resource, without affecting the current cluster, by using temporary (shadow) cib file
-        rc, out, err = module.run_command(commands[os]["resource"]["update"]) 
+        cmd = commands[os]["resource"]["update"]
+        rc, out, err = module.run_command(cmd) 
         if rc != 0:
+            result["stdout"] = out
+            result["error_message"] = err
+            result["command_used"] = cmd
             module.fail_json(msg="Error creating resource using the temporary (shadow) cib file", **result)
         
         new_cib_path = f"/var/lib/pacemaker/cib/shadow.{new_cib_name}" if os == "Suse" else f"./{new_cib_name}"
@@ -269,11 +277,13 @@ def run_module():
                     result["stdout"] = out
                     result["error_message"] = err
                     result["command_used"] = cmd
+                    # Delete shadow configuration
+                    module.run_command(commands[os]["cib"]["delete"] % new_cib_name)
                     module.fail_json(msg="Failed to update the resource", **result)
         # No differences
         else:
             result["message"] += "No updates necessary: resource already configured as desired. "
-
+        
         # Delete shadow configuration
         rc, out, err = module.run_command(commands[os]["cib"]["delete"] % new_cib_name)
     
