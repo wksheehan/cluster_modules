@@ -6,8 +6,6 @@
   tasks:
     - name: Cluster auth
       cluster_auth:
-        os: "{{ ansible_os_family }}"
-        version: "8"
         nodes: "x0rapp00leb7 x0rapp01leb7"
         username: hacluster
         password: "TestPass123!"

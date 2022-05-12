@@ -6,8 +6,6 @@
   tasks:
     - name: "Cluster init"
       cluster_init:
-        os: "{{ ansible_os_family }}"
-        version: "8"
         state: present
         sid: "wills-sid-123"
         nodes: "x0rapp00leb7 x0rapp01leb7"

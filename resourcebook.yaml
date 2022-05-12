@@ -6,7 +6,6 @@
   tasks:
     - name: "Cluster resource"
       cluster_resource:
-        os: "{{ ansible_os_family }}"
         state: present
         name: rsc_azure-events
         resource_class: ocf
