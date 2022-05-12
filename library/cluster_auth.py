@@ -13,15 +13,9 @@ short_description: authenticates nodes that will constitute a cluster
 
 version_added: "1.0"
 
-description: authenticates the user on one or more nodes to be used in a cluster for either RHEL or SUSE operating systems 
+description: authenticates the user on one or more nodes to be used in a cluster on RHEL operating system 
 
 options:
-    os:
-        description:
-            - the operating system
-        required: true
-        choices: ['RedHat', 'Suse']
-        type: str
     version:
         description:
             - the operating system version
@@ -53,25 +47,20 @@ author:
 EXAMPLES = r'''
 - name: Authenticate user hacluster on node1 for both the nodes in a two-node cluster (node1 and node2)
   cluster_auth:
-    os: {{ ansible_os_family }}
     version: {{ ansible_distribution_major_version }}
     nodes: node1 node2
     username: hacluster
     password: testpass
-
-- name: Deauthenticate node1
-  cluster_auth:
-    os: {{ ansible_os_family }}
-    nodes: node1
 '''
 
 from ansible.module_utils.basic import AnsibleModule
 from distutils.spawn import find_executable
 
 def run_module():
-    # define available arguments/parameters a user can pass to the module
+
+    # ==== Setup ====
+
     module_args = dict(
-        os=dict(required=True, choices=['RedHat', 'Suse']),
         version=dict(required=True, choices=['7', '8']),
         nodes=dict(required=True),
         username=dict(required=False, default="hacluster"),
@@ -88,25 +77,26 @@ def run_module():
         message=""
     )
 
-    # capture inputs
-    os          = module.params['os']
     version     = module.params['version']
     nodes       = module.params['nodes']
     username    = module.params['username']
     password    = module.params['password']
 
-    # initial validation checks
-    # add one checking version matches os
+
+    # ==== Initial checks ====
     
-    if os == "RedHat" and find_executable('pcs') is None:
+    if find_executable('pcs') is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     
+    
+    # ==== Main code ====
+
     rc, out, err = module.run_command('pcs cluster pcsd-status %s' % nodes)
 
     if rc == 0:
-        result['message'] = "Nodes %s are all online" % nodes
+        result["message"] = "Nodes %s are all online" % nodes
     else:
-        result['changed'] = True
+        result["changed"] = True
         if not module.check_mode:
             if version == "7":
                 cmd = "pcs cluster auth %s -u %s -p %s" % (nodes, username, password)
@@ -115,8 +105,14 @@ def run_module():
             else:
                 module.fail_json(msg='Incorrect operating system version specified', **result)
             rc, out, err = module.run_command(cmd)
-            if rc != 0:
-                module.fail_json(msg="Failed to authenticate to node using command '" + cmd + "'", output=out, error=err)
+            if rc == 0:
+                result["message"] = "Nodes were successfully authenticated"
+            else:
+                result["changed"] = False
+                result["stdout"] = out
+                result["error_message"] = err
+                result["command_used"] = cmd
+                module.fail_json(msg="Failed to authenticate to one or more nodes", **result)
 
     # Success
     module.exit_json(**result)

@@ -7,9 +7,9 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: cluster_auth
+module: cluster_property
 
-short_description: sets and unsets both cluster and node properties
+short_description: sets and unsets cluster and node properties
 
 version_added: "1.0"
 
@@ -114,14 +114,14 @@ def run_module():
     commands["Suse"  ]["property" ]["unset"]        = "crm configure property"
     commands["RedHat"]["attribute"]["unset"]        = "pcs node attribute %s %s=" % (node, name)
     commands["Suse"  ]["attribute"]["unset"]        = "crm node attribute %s delete %s" % (node, name)
-    commands["RedHat"]["property" ]["get"]          = "pcs property list --all | grep %s | awk -F'[:]' '{print $2}' | tr -d '[:space:]'" % name # Good, but if the value contains spaces there will be an issue during equality comparison
-    commands["Suse"  ]["property" ]["get"]          = "crm configure get_property %s" % name # GOOD
-    commands["RedHat"]["attribute"]["get"]          = "pcs node attribute --name %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (name, node) # GOOD
-    commands["Suse"  ]["attribute"]["get"]          = "crm node show %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (node, name) # GOOD
-    commands["RedHat"]["property" ]["check"]        = "pcs property show %s | grep %s" % (name, name) # GOOD
-    commands["Suse"  ]["property" ]["check"]        = "crm configure show type:property | grep %s=" % name # GOOD
-    commands["RedHat"]["attribute"]["check"]        = "pcs node attribute --name %s | grep %s" % (name, node) # GOOD
-    commands["Suse"  ]["attribute"]["check"]        = "crm node attribute %s show %s" % (node, name) # GOOD
+    commands["RedHat"]["property" ]["get"]          = "pcs property list --all | grep %s | awk -F'[:]' '{print $2}' | tr -d '[:space:]'" % name # If the value contains spaces there will be an issue during equality comparison
+    commands["Suse"  ]["property" ]["get"]          = "crm configure get_property %s" % name
+    commands["RedHat"]["attribute"]["get"]          = "pcs node attribute --name %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (name, node)
+    commands["Suse"  ]["attribute"]["get"]          = "crm node show %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (node, name)
+    commands["RedHat"]["property" ]["check"]        = "pcs property show %s | grep %s" % (name, name)
+    commands["Suse"  ]["property" ]["check"]        = "crm configure show type:property | grep %s=" % name
+    commands["RedHat"]["attribute"]["check"]        = "pcs node attribute --name %s | grep %s" % (name, node)
+    commands["Suse"  ]["attribute"]["check"]        = "crm node attribute %s show %s" % (node, name)
     commands["RedHat"]["property" ]["list"]         = "pcs property list"
     commands["Suse"  ]["property" ]["list"]         = "crm configure show type:property"
     commands["RedHat"]["attribute"]["list"]         = "pcs node attribute"
@@ -188,25 +188,19 @@ def run_module():
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to unset " + name, **result)
 
+
     # ==== Main code ====
 
-    # Set property
     if state == "present":
-        # Property is not set to desired value
         if get_property() != value:
             set_property()
-        # Property is already set to correct value
         else:
             result["message"] += "No changes needed: %s is already set. " % ctype
-    # Unset property
     else:
-        # Property is set to something
         if check_property():
             unset_property()
-        # Property is not currently set
         else:
             result["message"] += "No changes needed: %s is not currently set. " % ctype
-
 
     # Success
     module.exit_json(**result)

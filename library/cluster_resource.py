@@ -74,6 +74,7 @@ EXAMPLES = r'''
     state: present
     name: my_stonith_resource
     resource-type: stonith
+    options: login="username" password="testpass" op monitor interval=3600s
 '''
 
 from ansible.module_utils.basic import AnsibleModule
@@ -136,12 +137,6 @@ def run_module():
     curr_cib_path       = "/var/lib/pacemaker/cib/cib.xml"
     new_cib_name        = "shadow-cib" + str(uuid.uuid4())
 
-# TODO:
-# Clone creation (maybe separate module)
-# Master slave configuration check
-# Promotable status check
-# Is the option string ever different for Suse vs RedHat 7 vs RedHat 8?
-
 
     # ==== Command dictionary ====
 
@@ -167,6 +162,7 @@ def run_module():
     commands["RedHat"]["resource"]["delete"]        = f"pcs resource delete {name}"
     commands["Suse"  ]["resource"]["delete"]        = f"crm configure delete --force {name}"
     
+
     # ==== Initial checks ====
 
     if os == "RedHat" and find_executable('pcs') is None:
@@ -176,6 +172,7 @@ def run_module():
     rc, out, err = module.run_command(commands[os]["status"])
     if rc != 0:
         module.fail_json(msg="Cluster is not running on current node!", **result)
+
 
     # ==== Functions ====
     
@@ -307,6 +304,7 @@ def run_module():
         module.run_command(f"rm -f {r1_file_path} {r2_file_path}")
 
         return rc
+
 
     # ==== Main code ====
 

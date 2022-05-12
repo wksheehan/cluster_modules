@@ -9,15 +9,15 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: cluster_auth
+module: cluster_init
 
-short_description: initializes a pacemaker cluster
+short_description: initializes, modifies, and deletes pacemaker clusters
 
 version_added: "1.0"
 
 description: 
     - creates or modifies a cluster so that it contains exactly the specified node set
-    - starts the cluster on all nodes (redhat)
+    - starts the cluster on all nodes (RedHat)
     - fails if not all nodes specified are online after 120 seconds
     - for use with RHEL or SUSE operating systems 
 
@@ -50,8 +50,8 @@ options:
     existing_node:
         description:
             - may be specified in the case of SUSE operating system
-            - the name of a node already in a cluster
-            - if specified, implies a cluster is already set up
+            - if specified, implies a cluster is already set up, but not on the current node
+            - defines the name of a node already in a cluster
             - the current node that calls this module will attempt to join this existing cluster
         required: false
         type: str
@@ -59,7 +59,7 @@ options:
         description:
             - the desired nodes to exist in the cluster
             - a string of node names separated by spaces
-            - module will add or remove any nodes necessary in order to create a cluster with exactly these nodes
+            - module will add or remove any nodes necessary in order to ensure a cluster contains exactly these nodes
         required: false
         type: str
     tier:
@@ -87,21 +87,26 @@ EXAMPLES = r'''
     nodes: node1 node2
     tier: hana
     token: 30000
-'''
 
-# RETURN = r'''
-# # These are examples of possible return values, and in general should use other names for return values.
-# # original_message:
-# #     description: The original name param that was passed in.
-# #     type: str
-# #     returned: always
-# #     sample: 'hello world'
-# # message:
-# #     description: The output message that the test module generates.
-# #     type: str
-# #     returned: always
-# #     sample: 'goodbye'
-# '''
+- name: Modify the cluster to have a different node in it
+  cluster_init:
+    os: RedHat
+    version: 8
+    state: present
+    sid: SAP01
+    nodes: node1 node3
+    tier: hana
+    token: 30000
+
+- name: Remove the entire cluster
+  cluster_init:
+    os: RedHat
+    version: 8
+    state: absent
+    sid: SAP01
+    tier: hana
+    token: 30000
+'''
 
 from ansible.module_utils.basic import AnsibleModule
 from distutils.spawn import find_executable
@@ -109,6 +114,7 @@ from time import sleep
 import re
 import socket
 import os as OS
+
 
 def run_module():
 
@@ -217,6 +223,7 @@ def run_module():
                 else:
                     result["changed"] = False
                     result["stdout"] = out
+                    result["error_message"] = err
                     result["command_used"] = cmd
                     module.fail_json(msg="Error starting the cluster", **result)
         
@@ -234,6 +241,7 @@ def run_module():
                 else:
                     result["changed"] = False
                     result["stdout"] = out
+                    result["error_message"] = err
                     result["command_used"] = cmd
                     module.fail_json(msg="Error starting the cluster", **result)
     
@@ -250,6 +258,7 @@ def run_module():
                 else:
                     result["changed"] = False
                     result["stdout"] = out
+                    result["error_message"] = err
                     result["command_used"] = cmd
                     module.fail_json(msg="Error stopping the cluster", **result)
 
@@ -293,6 +302,7 @@ def run_module():
             else:
                 result["changed"] = False
                 result["stdout"] = out
+                result["error_message"] = err
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to set up the cluster", **result)
     
@@ -307,6 +317,7 @@ def run_module():
             else:
                 result["changed"] = False
                 result["stdout"] = out
+                result["error_message"] = err
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to join existing cluster", **result)
     
@@ -323,6 +334,7 @@ def run_module():
             else:
                 result["changed"] = False
                 result["stdout"] = out
+                result["error_message"] = err
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to add the following nodes to the cluster: " + nodes_to_add, **result)
 
@@ -361,6 +373,7 @@ def run_module():
             else:
                 result["changed"] = False
                 result["stdout"] = out
+                result["error_message"] = err
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to destroy the cluster", **result)
 
