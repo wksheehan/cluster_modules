@@ -128,8 +128,8 @@ def run_module():
     nodes_set       = set(nodes.split())
     tier            = module.params['tier']
     token           = module.params['token']
-    prefix          = tier if tier != "hana" else "hdb"
     curr_node       = socket.gethostname()
+    cluster_exists  = OS.path.isfile('/etc/corosync/corosync.conf') or OS.path.isfile('/var/lib/pacemaker/cib/cib.xml')
 
     # Get the os distribution
     cmd = "egrep '^NAME=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
@@ -151,6 +151,13 @@ def run_module():
         module.fail_json("Could not identify OS version", **result)
     else:
         version = out.split('.')[0]
+
+    # Generate the desired cluster name
+    if os == "Suse":
+        prefix = "hdb" if tier == "hana" else tier
+        desired_cluster_name = "%s_%s" % (prefix, sid)
+    else:
+        desired_cluster_name = "%s_cluster" % sid
 
 
     # ==== Initial checks ====
@@ -176,9 +183,9 @@ def run_module():
     commands["RedHat"]["7"  ]                   = {}
     commands["RedHat"]["8"  ]                   = {}
     commands["Suse"  ]["all"]                   = {}
-    commands["RedHat"]["7"  ]["setup"]          = "pcs cluster setup --name %s_cluster %s --token %s" % (sid, nodes, token)
-    commands["RedHat"]["8"  ]["setup"]          = "pcs cluster setup %s_cluster %s totem token=%s" % (sid, nodes, token)
-    commands["Suse"  ]["all"]["setup"]          = "ha-cluster-init -y --name '%s_%s' --interface eth0 --no-overwrite-sshkey --nodes '%s'" % (prefix, sid, nodes) # password needs to be configured and passed into command
+    commands["RedHat"]["7"  ]["setup"]          = "pcs cluster setup --name %s %s --token %s" % (desired_cluster_name, nodes, token)
+    commands["RedHat"]["8"  ]["setup"]          = "pcs cluster setup %s %s totem token=%s" % (desired_cluster_name, nodes, token)
+    commands["Suse"  ]["all"]["setup"]          = "ha-cluster-init -y --name '%s' --interface eth0 --no-overwrite-sshkey --nodes '%s'" % (desired_cluster_name, nodes) # password needs to be configured and passed into command
     commands["RedHat"]["7"  ]["destroy"]        = "pcs cluster destroy"
     commands["RedHat"]["8"  ]["destroy"]        = "pcs cluster destroy"
     commands["Suse"  ]["all"]["destroy"]        = "crm cluster remove -y -c %s %s --force" # % (curr_node, " ".join(nodes_set))
@@ -260,6 +267,18 @@ def run_module():
                     result["error_message"] = err
                     result["command_used"] = cmd
                     module.fail_json(msg="Error stopping the cluster", **result)
+
+    # Get name of existing cluster on the current node
+    def get_cluster_name():
+        cmd = "grep cluster_name /etc/corosync/corosync.conf | awk -F'[:]' '{print $2}' | tr -d '[:space:]'"
+        rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
+        if rc == 0:
+            return out
+        else:
+            result["stdout"] = out
+            result["error_message"] = err
+            result["command_used"] = cmd
+            module.fail_json(msg="Failed to identify current cluster name", **result)
 
     # Get set of existing nodes in the cluster configuration
     def get_nodes():
@@ -357,55 +376,61 @@ def run_module():
                 result["error"] = err
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to remove the following nodes to the cluster: " + nodes_to_remove, **result)
+    
+    # Update an existing cluster
+    def update_cluster():
+        # Fail if names do match
+        curr_cluster_name = get_cluster_name()
+        if curr_cluster_name != desired_cluster_name:
+            module.fail_json(msg="A cluster with the name %s already exists on the node" % curr_cluster_name, **result)
+        # Get the difference in nodes
+        existing_nodes = get_nodes()
+        nodes_to_add = nodes_set - existing_nodes
+        nodes_to_remove = existing_nodes - nodes_set
+        # Add missing nodes
+        if len(nodes_to_add) > 0:
+            add_nodes(nodes_to_add)
+        # Remove extra nodes
+        if len(nodes_to_remove) > 0:
+            remove_nodes(nodes_to_remove)
+        # Configuration is as desired
+        if len(nodes_to_add) == 0 and len(nodes_to_remove) == 0:
+            result["message"] += "No changes needed: cluster is already set up with the nodes specified. "
 
     # Destroy an entire cluster configuration on all nodes
     def destroy_cluster():
-        result["changed"] = True
-        if not module.check_mode:
-            cmd = commands[os][version]["destroy"]
-            if os == "Suse":
-                other_nodes = get_nodes() - {curr_node}
-                cmd = cmd % (curr_node, " ".join(other_nodes))
-            rc, out, err = module.run_command(cmd)
-            if rc == 0:
-                result["message"] += "Succesfully destroyed the cluster. "
-            else:
-                result["changed"] = False
-                result["stdout"] = out
-                result["error_message"] = err
-                result["command_used"] = cmd
-                module.fail_json(msg="Failed to destroy the cluster", **result)
+        # Do nothing if names do not match
+        curr_cluster_name = get_cluster_name()
+        if curr_cluster_name != desired_cluster_name:
+            result["message"] += "No changes needed: existing cluster detected but has a different name: %s " % curr_cluster_name
+        else:
+            result["changed"] = True
+            if not module.check_mode:
+                cmd = commands[os][version]["destroy"]
+                if os == "Suse":
+                    other_nodes = get_nodes() - {curr_node}
+                    cmd = cmd % (curr_node, " ".join(other_nodes))
+                rc, out, err = module.run_command(cmd)
+                if rc == 0:
+                    result["message"] += "Succesfully destroyed the cluster. "
+                else:
+                    result["changed"] = False
+                    result["stdout"] = out
+                    result["error_message"] = err
+                    result["command_used"] = cmd
+                    module.fail_json(msg="Failed to destroy the cluster", **result)
 
 
     # ==== Main code ====
 
-    # Check if cluster configuration exists
-    corosync_conf_exists = OS.path.isfile('/etc/corosync/corosync.conf')
-
     # Create or modify the cluster
     if state == "present":
-        # No existing cluster on current node
-        if not corosync_conf_exists:
-            # Cluster exists on a different node
-            if existing_node is not None and curr_node != existing_node:
-                join_cluster()
-            else:
-                setup_cluster()
-        # Cluster detected on current node
+        if cluster_exists:
+            update_cluster()
+        elif existing_node is not None and curr_node != existing_node:
+            join_cluster()
         else:
-            # Get the difference in nodes
-            existing_nodes = get_nodes()
-            nodes_to_add = nodes_set - existing_nodes
-            nodes_to_remove = existing_nodes - nodes_set
-            # Add missing nodes
-            if len(nodes_to_add) > 0:
-                add_nodes(nodes_to_add)
-            # Remove extra nodes
-            if len(nodes_to_remove) > 0:
-                remove_nodes(nodes_to_remove)
-            # Configuration is as desired
-            if len(nodes_to_add) == 0 and len(nodes_to_remove) == 0:
-                result["message"] += "No changes needed: cluster is already set up with the nodes specified. "
+            setup_cluster()
         if not module.check_mode:
             # Ensure cluster is started
             start_all() if os == "RedHat" else start_cluster()
@@ -417,7 +442,7 @@ def run_module():
                 module.fail_json(msg="Could not get all nodes online after 120s. The following nodes are not online: " + " ".join(nodes_set - nodes_online), **result)
     # Remove the cluster
     else:
-        if corosync_conf_exists:
+        if cluster_exists:
             destroy_cluster()
         else:
             result["message"] += "No changes needed: no clusters were detected on the current node. "
