@@ -48,7 +48,6 @@ EXAMPLES = r'''
 
 from ansible.module_utils.basic import AnsibleModule
 from distutils.spawn import find_executable
-import platform
 
 def run_module():
 
@@ -70,11 +69,17 @@ def run_module():
         message=""
     )
 
-    version     = platform.dist()[1].split('.')[0]
     nodes       = module.params['nodes']
     username    = module.params['username']
     password    = module.params['password']
 
+    # Get the os version
+    cmd = "egrep '^VERSION_ID=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
+    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
+    if rc != 0:
+        module.fail_json("Could not identify OS version", **result)
+    else:
+        version = out.split('.')[0]
 
     # ==== Initial checks ====
     

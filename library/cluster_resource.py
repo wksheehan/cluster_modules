@@ -76,7 +76,6 @@ import xml.etree.ElementTree as ET
 import uuid
 import os as OS
 import tempfile
-import platform
 
 
 def run_module():
@@ -102,13 +101,25 @@ def run_module():
         message=""
     )
 
-    os                  = platform.dist()[0].lower()
     state               = module.params['state']
     name                = module.params['name']
     resource_class      = module.params['resource_class']
     resource_provider   = module.params['resource_provider']
     resource_type       = module.params['resource_type']
     options             = module.params['options']
+
+    # Get the os distribution
+    cmd = "egrep '^NAME=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
+    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
+    if rc != 0:
+        module.fail_json("Could not identify OS distribution", **result)
+    else:
+        if "SLES" in out:
+            os = "Suse"
+        elif "RedHat" in out:
+            os = "RedHat"
+        else:
+            module.fail_json("Unrecognized linux distribution", **result)
 
     # Formats the class:provider:type parameter for cluster creation
     def format_class_provider_type():
@@ -121,7 +132,7 @@ def run_module():
             class_provider_type += resource_type + ":"
         if resource_class or resource_provider or resource_type:
             class_provider_type = class_provider_type[:-1]
-        if resource_class == "stonith" and os == "redhat":
+        if resource_class == "stonith" and os == "RedHat":
             class_provider_type = resource_type
         return class_provider_type
 
@@ -134,31 +145,31 @@ def run_module():
     # ==== Command dictionary ====
 
     commands                                        = {}
-    commands["redhat"]                              = {}
-    commands["suse"  ]                              = {}
-    commands["redhat"]["status"]                    = "pcs status"
-    commands["suse"  ]["status"]                    = "crm status"
-    commands["redhat"]["cib"]                       = {}
-    commands["suse"  ]["cib"]                       = {}
-    commands["redhat"]["cib"]["push"]               = "pcs cluster cib-push --config %s" # % new_cib_name
-    commands["suse"  ]["cib"]["push"]               = "crm cib commit %s"    # % new_cib_name
-    commands["redhat"]["cib"]["delete"]             = "rm -f %s" # % new_cib_name
-    commands["suse"  ]["cib"]["delete"]             = "crm cib delete %s"    # % new_cib_name
-    commands["redhat"]["resource"]                  = {}
-    commands["suse"  ]["resource"]                  = {}
-    commands["redhat"]["resource"]["read"]          = f"pcs {read_type} config {name}"
-    commands["suse"  ]["resource"]["read"]          = f"crm config show {name}" 
-    commands["redhat"]["resource"]["create"]        = f"pcs {read_type} create {name} {class_provider_type} {options}"
-    commands["suse"  ]["resource"]["create"]        = f"crm configure primitive {name} {class_provider_type} {options}"
-    commands["redhat"]["resource"]["update"]        = f"pcs -f {new_cib_name} {read_type} create {name} {class_provider_type} {options}"
-    commands["suse"  ]["resource"]["update"]        = f"crm -F -c {new_cib_name} configure primitive {name} {class_provider_type} {options}"
-    commands["redhat"]["resource"]["delete"]        = f"pcs resource delete {name}"
-    commands["suse"  ]["resource"]["delete"]        = f"crm configure delete --force {name}"
+    commands["RedHat"]                              = {}
+    commands["Suse"  ]                              = {}
+    commands["RedHat"]["status"]                    = "pcs status"
+    commands["Suse"  ]["status"]                    = "crm status"
+    commands["RedHat"]["cib"]                       = {}
+    commands["Suse"  ]["cib"]                       = {}
+    commands["RedHat"]["cib"]["push"]               = "pcs cluster cib-push --config %s" # % new_cib_name
+    commands["Suse"  ]["cib"]["push"]               = "crm cib commit %s"    # % new_cib_name
+    commands["RedHat"]["cib"]["delete"]             = "rm -f %s" # % new_cib_name
+    commands["Suse"  ]["cib"]["delete"]             = "crm cib delete %s"    # % new_cib_name
+    commands["RedHat"]["resource"]                  = {}
+    commands["Suse"  ]["resource"]                  = {}
+    commands["RedHat"]["resource"]["read"]          = f"pcs {read_type} config {name}"
+    commands["Suse"  ]["resource"]["read"]          = f"crm config show {name}" 
+    commands["RedHat"]["resource"]["create"]        = f"pcs {read_type} create {name} {class_provider_type} {options}"
+    commands["Suse"  ]["resource"]["create"]        = f"crm configure primitive {name} {class_provider_type} {options}"
+    commands["RedHat"]["resource"]["update"]        = f"pcs -f {new_cib_name} {read_type} create {name} {class_provider_type} {options}"
+    commands["Suse"  ]["resource"]["update"]        = f"crm -F -c {new_cib_name} configure primitive {name} {class_provider_type} {options}"
+    commands["RedHat"]["resource"]["delete"]        = f"pcs resource delete {name}"
+    commands["Suse"  ]["resource"]["delete"]        = f"crm configure delete --force {name}"
     
 
     # ==== Initial checks ====
 
-    if os == "redhat" and find_executable('pcs') is None:
+    if os == "RedHat" and find_executable('pcs') is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     if state == "present" and resource_type is None:
         module.fail_json(msg='Must specify resource_type when state is present' **result)
@@ -213,7 +224,7 @@ def run_module():
         if not OS.path.isfile(curr_cib_path):
             module.fail_json(msg="Unable to find CIB file for existing resource", **result)
 
-        if os == "suse":
+        if os == "Suse":
             # Need to initialize an empty shadow cib file in os == Suse case
             cmd = "crm cib new %s empty" % new_cib_name
             rc, out, err = module.run_command(cmd)
@@ -232,7 +243,7 @@ def run_module():
             result["command_used"] = cmd
             module.fail_json(msg="Error creating resource using the temporary (shadow) cib file", **result)
         
-        new_cib_path = f"/var/lib/pacemaker/cib/shadow.{new_cib_name}" if os == "suse" else f"./{new_cib_name}"
+        new_cib_path = f"/var/lib/pacemaker/cib/shadow.{new_cib_name}" if os == "Suse" else f"./{new_cib_name}"
 
         # Get the current and new resource XML objects
         curr_cib        = ET.parse(curr_cib_path)
