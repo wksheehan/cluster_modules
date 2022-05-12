@@ -3,6 +3,8 @@
 # Copyright: (c) 2022, William Sheehan <willksheehan@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 from __future__ import (absolute_import, division, print_function)
+from cluster_modules.library.helper_functions import *
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -51,7 +53,7 @@ from distutils.spawn import find_executable
 
 def run_module():
 
-    # ==== Setup ====
+    # ==== SETUP ====
 
     module_args = dict(
         nodes=dict(required=True),
@@ -69,25 +71,19 @@ def run_module():
         message=""
     )
 
+    version     = get_os_version(module, result)
     nodes       = module.params['nodes']
     username    = module.params['username']
     password    = module.params['password']
 
-    # Get the os version
-    cmd = "egrep '^VERSION_ID=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
-    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
-    if rc != 0:
-        module.fail_json("Could not identify OS version", **result)
-    else:
-        version = out.split('.')[0]
 
-    # ==== Initial checks ====
+    # ==== INITIAL CHECKS ====
     
     if find_executable('pcs') is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     
     
-    # ==== Main code ====
+    # ==== MAIN CODE ====
 
     rc, out, err = module.run_command('pcs cluster pcsd-status %s' % nodes)
 
@@ -102,15 +98,9 @@ def run_module():
                 cmd = "pcs host auth %s -u %s -p %s" % (nodes, username, password)
             else:
                 module.fail_json(msg='Incorrect operating system version specified', **result)
-            rc, out, err = module.run_command(cmd)
-            if rc == 0:
-                result["message"] = "Nodes were successfully authenticated"
-            else:
-                result["changed"] = False
-                result["stdout"] = out
-                result["error_message"] = err
-                result["command_used"] = cmd
-                module.fail_json(msg="Failed to authenticate to one or more nodes", **result)
+            execute_command(module, result, cmd, 
+                            "Nodes were successfully authenticated", 
+                            "Failed to authenticated to one or more nodes")
 
     # Success
     module.exit_json(**result)

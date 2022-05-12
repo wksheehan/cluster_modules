@@ -3,8 +3,8 @@
 # Copyright: (c) 2022, William Sheehan <willksheehan@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 from __future__ import (absolute_import, division, print_function)
+from cluster_modules.library.helper_functions import *
 
-from pkg_resources import require
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -100,7 +100,7 @@ import os as OS
 
 def run_module():
 
-    # ==== Setup ==== 
+    # ==== SETUP ==== 
 
     module_args = dict(
         state=dict(required=True, choices=['present','absent']),
@@ -121,6 +121,8 @@ def run_module():
         message=""
     )
 
+    os              = get_os_name(module, result)
+    version         = get_os_version(module, result)
     state           = module.params['state']
     sid             = module.params['sid']
     existing_node   = module.params['existing_node']
@@ -131,27 +133,6 @@ def run_module():
     curr_node       = socket.gethostname()
     cluster_exists  = OS.path.isfile('/etc/corosync/corosync.conf') or OS.path.isfile('/var/lib/pacemaker/cib/cib.xml')
 
-    # Get the os distribution
-    cmd = "egrep '^NAME=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
-    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
-    if rc != 0:
-        module.fail_json("Could not identify OS distribution", **result)
-    else:
-        if "SLES" in out:
-            os = "Suse"
-        elif "RedHat" in out:
-            os = "RedHat"
-        else:
-            module.fail_json("Unrecognized linux distribution", **result)
-    
-    # Get the os version
-    cmd = "egrep '^VERSION_ID=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
-    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
-    if rc != 0:
-        module.fail_json("Could not identify OS version", **result)
-    else:
-        version = out.split('.')[0]
-
     # Generate the desired cluster name
     if os == "Suse":
         prefix = "hdb" if tier == "hana" else tier
@@ -160,7 +141,7 @@ def run_module():
         desired_cluster_name = "%s_cluster" % sid
 
 
-    # ==== Initial checks ====
+    # ==== INITIAL CHECKS ====
 
     if os == "RedHat":
         if find_executable('pcs') is None:
@@ -175,7 +156,7 @@ def run_module():
         module.fail_json(msg="No nodes will be left in the cluster. If you intend to destroy the whole cluster, re-run the module with state: absent", **result)
 
     
-    # ==== Command dictionary ====
+    # ==== COMMAND DICTIONARY ====
 
     commands                                    = {}
     commands["RedHat"]                          = {}
@@ -214,7 +195,7 @@ def run_module():
     commands["Suse"  ]["file"]                  = "/etc/csync2/csync2.cfg"
 
     
-    # ==== Functions ====
+    # ==== FUNCTIONS ====
 
     # Ensure cluster is running on the current node
     def start_cluster():
@@ -223,15 +204,9 @@ def run_module():
             result["changed"] = True
             if not module.check_mode:
                 cmd = commands[os][version]["start"]
-                rc, out, err = module.run_command(cmd)
-                if rc == 0:
-                    result["message"] += "Successfully started the cluster. "
-                else:
-                    result["changed"] = False
-                    result["stdout"] = out
-                    result["error_message"] = err
-                    result["command_used"] = cmd
-                    module.fail_json(msg="Error starting the cluster", **result)
+                execute_command(module, result, cmd,
+                                "Successfully started the cluster. ",
+                                "Error starting the cluster")
         
     # Start a cluster on all nodes (for RedHat)
     def start_all():
@@ -241,15 +216,9 @@ def run_module():
             result["changed"] = True
             if not module.check_mode:
                 cmd = commands[os][version]["start"] + " --all"
-                rc, out, err = module.run_command(cmd)
-                if rc == 0:
-                    result["message"] += "Started the cluster on all nodes (RedHat). "
-                else:
-                    result["changed"] = False
-                    result["stdout"] = out
-                    result["error_message"] = err
-                    result["command_used"] = cmd
-                    module.fail_json(msg="Error starting the cluster", **result)
+                execute_command(module, result, cmd, 
+                                "Started the cluster on all nodes (RedHat). ",
+                                "Error starting the cluster")
     
     # Stop a cluster on the current node
     def stop_cluster():
@@ -258,15 +227,9 @@ def run_module():
             result["changed"] = True
             if not module.check_mode:
                 cmd = commands[os][version]["stop"]
-                rc, out, err = module.run_command(cmd)
-                if rc == 0:
-                    result["message"] += "Successfully stopped the cluster. "
-                else:
-                    result["changed"] = False
-                    result["stdout"] = out
-                    result["error_message"] = err
-                    result["command_used"] = cmd
-                    module.fail_json(msg="Error stopping the cluster", **result)
+                execute_command(module, result, cmd, 
+                                "Successfully stopped the cluster. ",
+                                "Error stopping the cluster")
 
     # Get name of existing cluster on the current node
     def get_cluster_name():
@@ -314,30 +277,18 @@ def run_module():
             if os == "Suse" and tier is None:
                 module.fail_json(msg="Must supply tier when setting up a new Suse cluster", **result)
             cmd = commands[os][version]["setup"]
-            rc, out, err = module.run_command(cmd)
-            if rc == 0:
-                result["message"] += "Successfully set up the cluster. "
-            else:
-                result["changed"] = False
-                result["stdout"] = out
-                result["error_message"] = err
-                result["command_used"] = cmd
-                module.fail_json(msg="Failed to set up the cluster", **result)
+            execute_command(module, result, cmd, 
+                            "Successfully set up the cluster. ",
+                            "Failed to set up the cluster")
     
     # Current node joins a cluster running on another node (Suse)
     def join_cluster():
         result["changed"] = True
         if not module.check_mode:
             cmd = commands[os][version]["join"]
-            rc, out, err = module.run_command(cmd)
-            if rc == 0:
-                result["message"] += curr_node + " successfully joined the cluster. "
-            else:
-                result["changed"] = False
-                result["stdout"] = out
-                result["error_message"] = err
-                result["command_used"] = cmd
-                module.fail_json(msg="Failed to join existing cluster", **result)
+            execute_command(module, result, cmd, 
+                            curr_node + " successfully joined the cluster. ",
+                            "Failed to join existing cluster")
     
     # Adds external nodes to existing cluster running on current node
     def add_nodes(nodes):
@@ -346,15 +297,9 @@ def run_module():
             start_cluster()
             nodes_to_add = " ".join(nodes)
             cmd = commands[os][version]["add"] + nodes_to_add
-            rc, out, err = module.run_command(cmd)
-            if rc == 0:
-                result["message"] += "Successfully added the following nodes to the cluster: " + nodes_to_add + ". "
-            else:
-                result["changed"] = False
-                result["stdout"] = out
-                result["error_message"] = err
-                result["command_used"] = cmd
-                module.fail_json(msg="Failed to add the following nodes to the cluster: " + nodes_to_add, **result)
+            execute_command(module, result, cmd, 
+                            "Successfully added the following nodes to the cluster: " + nodes_to_add + ". ",
+                            "Failed to add the following nodes to the cluster: " + nodes_to_add)
 
     # Delete nodes from existing cluster
     def remove_nodes(nodes):
@@ -367,15 +312,9 @@ def run_module():
             else:
                 nodes_to_remove = " ".join(nodes)
             cmd = commands[os][version]["remove"] % nodes_to_remove
-            rc, out, err = module.run_command(cmd)
-            if rc == 0:
-                result["message"] += "Successfully removed the following nodes from the cluster: " + nodes_to_remove + ". "
-            else:
-                result["changed"] = False
-                result["stdout"] = out
-                result["error"] = err
-                result["command_used"] = cmd
-                module.fail_json(msg="Failed to remove the following nodes to the cluster: " + nodes_to_remove, **result)
+            execute_command(module, result, cmd, 
+                            "Successfully removed the following nodes from the cluster: " + nodes_to_remove + ". ", 
+                            "Failed to remove the following nodes to the cluster: " + nodes_to_remove)
     
     # Update an existing cluster
     def update_cluster():
@@ -410,18 +349,12 @@ def run_module():
                 if os == "Suse":
                     other_nodes = get_nodes() - {curr_node}
                     cmd = cmd % (curr_node, " ".join(other_nodes))
-                rc, out, err = module.run_command(cmd)
-                if rc == 0:
-                    result["message"] += "Succesfully destroyed the cluster. "
-                else:
-                    result["changed"] = False
-                    result["stdout"] = out
-                    result["error_message"] = err
-                    result["command_used"] = cmd
-                    module.fail_json(msg="Failed to destroy the cluster", **result)
+                execute_command(module, result, cmd, 
+                                "Succesfully destroyed the cluster. ",
+                                "Failed to destroy the cluster")
 
 
-    # ==== Main code ====
+    # ==== MAIN CODE ====
 
     # Create or modify the cluster
     if state == "present":

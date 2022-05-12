@@ -3,7 +3,8 @@
 # Copyright: (c) 2022, William Sheehan <willksheehan@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 from __future__ import (absolute_import, division, print_function)
-from operator import truediv
+from cluster_modules.library.helper_functions import *
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -101,25 +102,13 @@ def run_module():
         message=""
     )
 
+    os                  = get_os_name(module, result)
     state               = module.params['state']
     name                = module.params['name']
     resource_class      = module.params['resource_class']
     resource_provider   = module.params['resource_provider']
     resource_type       = module.params['resource_type']
     options             = module.params['options']
-
-    # Get the os distribution
-    cmd = "egrep '^NAME=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
-    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
-    if rc != 0:
-        module.fail_json("Could not identify OS distribution", **result)
-    else:
-        if "SLES" in out:
-            os = "Suse"
-        elif "RedHat" in out:
-            os = "RedHat"
-        else:
-            module.fail_json("Unrecognized linux distribution", **result)
 
     # Formats the class:provider:type parameter for cluster creation
     def format_class_provider_type():
@@ -193,30 +182,18 @@ def run_module():
         result["changed"] = True
         if not module.check_mode:
             cmd = commands[os]["resource"]["create"]
-            rc, out, err = module.run_command(cmd)
-            if rc == 0:
-                result["message"] += "Resource was successfully created. "
-            else:
-                result["changed"] = False
-                result["stdout"] = out
-                result["error_message"] = err
-                result["command_used"] = cmd
-                module.fail_json(msg="Failed to create the resource", **result)
+            execute_command(module, result, cmd, 
+                            "Resource successfully created. ", 
+                            "Failed to create the resource")
     
     # Deletes an existing resource
     def remove_resource():
         result["changed"] = True
         if not module.check_mode:
             cmd = commands[os]["resource"]["delete"]
-            rc, out, err = module.run_command(cmd)
-            if rc == 0:
-                result["message"] += "Resource was successfully removed. "
-            else:
-                result["changed"] = False
-                result["stdout"] = out
-                result["error_message"] = err
-                result["command_used"] = cmd
-                module.fail_json(msg="Failed to remove the resource", **result)
+            execute_command(module, result, cmd, 
+                            "Resource successfully removed. ", 
+                            "Failed to remove the resource")
 
     # Updates an existing resource to match the configuration specified exactly
     def update_resource():

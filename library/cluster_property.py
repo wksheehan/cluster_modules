@@ -3,6 +3,8 @@
 # Copyright: (c) 2022, William Sheehan <willksheehan@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 from __future__ import (absolute_import, division, print_function)
+from cluster_modules.library.helper_functions import *
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -62,7 +64,7 @@ from distutils.spawn import find_executable
 
 def run_module():
     
-    # ==== Setup ====
+    # ==== SETUP ====
     
     module_args = dict(
         state=dict(required=False, default="present", choices=['present', 'absent']),
@@ -81,27 +83,15 @@ def run_module():
         message=""
     )
 
+    os      = get_os_name(module, result)
     state   = module.params['state']
     node    = module.params['node']
     name    = module.params['name']
     value   = module.params['value']
     ctype   = "property" if node is None else "attribute"
 
-    # Get the os distribution
-    cmd = "egrep '^NAME=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
-    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
-    if rc != 0:
-        module.fail_json("Could not identify OS distribution", **result)
-    else:
-        if "SLES" in out:
-            os = "Suse"
-        elif "RedHat" in out:
-            os = "RedHat"
-        else:
-            module.fail_json("Unrecognized linux distribution", **result)
 
-
-    # ==== Command dictionary ====
+    # ==== COMMAND DICTIONARY ====
 
     commands                                        = {}
     commands["RedHat"]                              = {}
@@ -136,7 +126,7 @@ def run_module():
     commands["Suse"  ]["attribute"]["contains"]     = "name=%s value=%s" % (name, value)
 
 
-    # ==== Initial checks ====
+    # ==== INITIAL CHECKS ====
 
     if os == "RedHat" and find_executable('pcs') is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
@@ -148,7 +138,7 @@ def run_module():
         module.fail_json(msg="Unable to retreive cluster properties or node attributes. Is the cluster running?", **result)
 
 
-    # ==== Functions ====
+    # ==== FUNCTIONS ====
 
     # Get the current property value
     def get_property():
@@ -170,32 +160,20 @@ def run_module():
         result["changed"] = True
         if not module.check_mode:
             cmd = commands[os][ctype]["set"]
-            rc, out, err = module.run_command(cmd)
-            if rc == 0:
-                result["message"] += "Successfully set " + name + " to " + value
-            else:
-                result["changed"] = False
-                result["stdout"] = out
-                result["error_message"] = err
-                result["command_used"] = cmd
-                module.fail_json(msg="Failed to set " + name + " to " + value, **result)
+            execute_command(module, result, cmd, 
+                            "Successfully set " + name + " to " + value, 
+                            "Failed to set " + name + " to " + value)
 
     def unset_property():
         result["changed"] = True
         if not module.check_mode:
             cmd = commands[os][ctype]["unset"]
-            rc, out, err = module.run_command(cmd)
-            if rc == 0:
-                result["message"] += "Successfully unset " + name
-            else:
-                result["changed"] = False
-                result["stdout"] = out
-                result["error_message"] = err
-                result["command_used"] = cmd
-                module.fail_json(msg="Failed to unset " + name, **result)
+            execute_command(module, result, cmd, 
+                            "Successfully unset " + name, 
+                            "Failed to unset " + name)
 
 
-    # ==== Main code ====
+    # ==== MAIN CODE ====
 
     if state == "present":
         if get_property() != value:
