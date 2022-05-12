@@ -22,18 +22,6 @@ description:
     - for use with RHEL or SUSE operating systems 
 
 options:
-    os:
-        description:
-            - the operating system
-        required: true
-        choices: ['RedHat', 'Suse']
-        type: str
-    version:
-        description:
-            - the operating system version
-            - required when OS is RedHat
-        required: false
-        type: str
     state:
         description:
             - 'present' will create or modify the cluster
@@ -80,8 +68,6 @@ author:
 EXAMPLES = r'''
 - name: Create a basic two node cluster for the hana node tier on RedHat 8
   cluster_init:
-    os: RedHat
-    version: 8
     state: present
     sid: SAP01
     nodes: node1 node2
@@ -90,8 +76,6 @@ EXAMPLES = r'''
 
 - name: Modify the cluster to have a different node in it
   cluster_init:
-    os: RedHat
-    version: 8
     state: present
     sid: SAP01
     nodes: node1 node3
@@ -100,8 +84,6 @@ EXAMPLES = r'''
 
 - name: Remove the entire cluster
   cluster_init:
-    os: RedHat
-    version: 8
     state: absent
     sid: SAP01
     tier: hana
@@ -121,8 +103,6 @@ def run_module():
     # ==== Setup ==== 
 
     module_args = dict(
-        os=dict(required=True, choices=['RedHat', 'Suse']),
-        version=dict(required=False),
         state=dict(required=True, choices=['present','absent']),
         sid=dict(required=False),
         existing_node=dict(required=False),
@@ -141,8 +121,6 @@ def run_module():
         message=""
     )
 
-    os              = module.params['os']
-    version         = module.params['version']
     state           = module.params['state']
     sid             = module.params['sid']
     existing_node   = module.params['existing_node']
@@ -152,6 +130,27 @@ def run_module():
     token           = module.params['token']
     prefix          = tier if tier != "hana" else "hdb"
     curr_node       = socket.gethostname()
+
+    # Get the os distribution
+    cmd = "egrep '^NAME=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
+    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
+    if rc != 0:
+        module.fail_json("Could not identify OS distribution", **result)
+    else:
+        if "SLES" in out:
+            os = "Suse"
+        elif "RedHat" in out:
+            os = "RedHat"
+        else:
+            module.fail_json("Unrecognized linux distribution", **result)
+    
+    # Get the os version
+    cmd = "egrep '^VERSION_ID=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
+    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
+    if rc != 0:
+        module.fail_json("Could not identify OS version", **result)
+    else:
+        version = out.split('.')[0]
 
 
     # ==== Initial checks ====

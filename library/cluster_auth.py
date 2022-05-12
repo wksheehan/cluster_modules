@@ -16,12 +16,6 @@ version_added: "1.0"
 description: authenticates the user on one or more nodes to be used in a cluster on RHEL operating system 
 
 options:
-    version:
-        description:
-            - the operating system version
-        required: true
-        choices: ['7', '8']
-        type: str
     nodes:
         description:
             - the nodes to authenticate or deauthenticate
@@ -47,7 +41,6 @@ author:
 EXAMPLES = r'''
 - name: Authenticate user hacluster on node1 for both the nodes in a two-node cluster (node1 and node2)
   cluster_auth:
-    version: {{ ansible_distribution_major_version }}
     nodes: node1 node2
     username: hacluster
     password: testpass
@@ -61,7 +54,6 @@ def run_module():
     # ==== Setup ====
 
     module_args = dict(
-        version=dict(required=True, choices=['7', '8']),
         nodes=dict(required=True),
         username=dict(required=False, default="hacluster"),
         password=dict(required=True, no_log=True)
@@ -77,11 +69,17 @@ def run_module():
         message=""
     )
 
-    version     = module.params['version']
     nodes       = module.params['nodes']
     username    = module.params['username']
     password    = module.params['password']
 
+    # Get the os version
+    cmd = "egrep '^VERSION_ID=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
+    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
+    if rc != 0:
+        module.fail_json("Could not identify OS version", **result)
+    else:
+        version = out.split('.')[0]
 
     # ==== Initial checks ====
     

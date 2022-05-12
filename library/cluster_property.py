@@ -51,7 +51,6 @@ author:
 EXAMPLES = r'''
 - name: Set stonith-timeout property to 900
   cluster_property:
-    os: RedHat
     state: present
     name: stonith-timeout
     value: 900
@@ -96,18 +95,10 @@ def run_module():
     else:
         if "SLES" in out:
             os = "Suse"
-        elif "Red Hat" in out:
+        elif "RedHat" in out:
             os = "RedHat"
         else:
             module.fail_json("Unrecognized linux distribution", **result)
-
-    # Get the os version
-    cmd = "egrep '^VERSION_ID=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
-    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
-    if rc != 0:
-        module.fail_json("Could not identify OS version", **result)
-    else:
-        version = out
 
 
     # ==== Command dictionary ====

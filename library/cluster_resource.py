@@ -19,12 +19,6 @@ description:
     - for RHEL or SUSE operating systems 
 
 options:
-    os:
-        description:
-            - the operating system
-        required: true
-        choices: ['RedHat', 'Suse']
-        type: str
     state:
         description:
             - 'present' ensures the resource is exists
@@ -70,7 +64,6 @@ author:
 EXAMPLES = r'''
 - name: Create a stonith resource
   cluster_resource:
-    os: RedHat
     state: present
     name: my_stonith_resource
     resource-type: stonith
@@ -90,7 +83,6 @@ def run_module():
     # ==== Setup ====
     
     module_args = dict(
-        os=dict(required=True, choices=['RedHat', 'Suse']),
         state=dict(required=False, default="present", choices=['present', 'absent']),
         name=dict(required=True),
         resource_class=dict(required=False),
@@ -109,13 +101,25 @@ def run_module():
         message=""
     )
 
-    os                  = module.params['os']
     state               = module.params['state']
     name                = module.params['name']
     resource_class      = module.params['resource_class']
     resource_provider   = module.params['resource_provider']
     resource_type       = module.params['resource_type']
     options             = module.params['options']
+
+    # Get the os distribution
+    cmd = "egrep '^NAME=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
+    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
+    if rc != 0:
+        module.fail_json("Could not identify OS distribution", **result)
+    else:
+        if "SLES" in out:
+            os = "Suse"
+        elif "RedHat" in out:
+            os = "RedHat"
+        else:
+            module.fail_json("Unrecognized linux distribution", **result)
 
     # Formats the class:provider:type parameter for cluster creation
     def format_class_provider_type():
