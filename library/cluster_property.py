@@ -58,6 +58,7 @@ EXAMPLES = r'''
 
 from ansible.module_utils.basic import AnsibleModule
 from distutils.spawn import find_executable
+import platform
 
 
 def run_module():
@@ -81,64 +82,52 @@ def run_module():
         message=""
     )
 
+    os      = platform.dist()[0].lower()
     state   = module.params['state']
     node    = module.params['node']
     name    = module.params['name']
     value   = module.params['value']
     ctype   = "property" if node is None else "attribute"
 
-    # Get the os distribution
-    cmd = "egrep '^NAME=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
-    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
-    if rc != 0:
-        module.fail_json("Could not identify OS distribution", **result)
-    else:
-        if "SLES" in out:
-            os = "Suse"
-        elif "RedHat" in out:
-            os = "RedHat"
-        else:
-            module.fail_json("Unrecognized linux distribution", **result)
-
 
     # ==== Command dictionary ====
 
     commands                                        = {}
-    commands["RedHat"]                              = {}
-    commands["Suse"]                                = {}
-    commands["RedHat"]["property" ]                 = {}
-    commands["Suse"  ]["property" ]                 = {}
-    commands["RedHat"]["attribute"]                 = {}
-    commands["Suse"  ]["attribute"]                 = {}
-    commands["RedHat"]["property" ]["set"]          = "pcs property set %s=%s" % (name, value)
-    commands["Suse"  ]["property" ]["set"]          = "crm configure property %s=%s" % (name, value)
-    commands["RedHat"]["attribute"]["set"]          = "pcs node attribute %s %s=%s" % (node, name, value)
-    commands["Suse"  ]["attribute"]["set"]          = "crm node attribute %s set %s %s" % (node, name, value)
-    commands["RedHat"]["property" ]["unset"]        = "pcs property unset %s" % name
-    commands["Suse"  ]["property" ]["unset"]        = "crm configure property"
-    commands["RedHat"]["attribute"]["unset"]        = "pcs node attribute %s %s=" % (node, name)
-    commands["Suse"  ]["attribute"]["unset"]        = "crm node attribute %s delete %s" % (node, name)
-    commands["RedHat"]["property" ]["get"]          = "pcs property list --all | grep %s | awk -F'[:]' '{print $2}' | tr -d '[:space:]'" % name # If the value contains spaces there will be an issue during equality comparison
-    commands["Suse"  ]["property" ]["get"]          = "crm configure get_property %s | tr -d '[:space:]'" % name
-    commands["RedHat"]["attribute"]["get"]          = "pcs node attribute --name %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (name, node)
-    commands["Suse"  ]["attribute"]["get"]          = "crm node show %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (node, name)
-    commands["RedHat"]["property" ]["check"]        = "pcs property show %s | grep %s" % (name, name)
-    commands["Suse"  ]["property" ]["check"]        = "crm configure show type:property | grep %s=" % name
-    commands["RedHat"]["attribute"]["check"]        = "pcs node attribute --name %s | grep %s" % (name, node)
-    commands["Suse"  ]["attribute"]["check"]        = "crm node attribute %s show %s" % (node, name)
-    commands["RedHat"]["property" ]["list"]         = "pcs property list"
-    commands["Suse"  ]["property" ]["list"]         = "crm configure show type:property"
-    commands["RedHat"]["attribute"]["list"]         = "pcs node attribute"
-    commands["Suse"  ]["attribute"]["list"]         = "crm configure show type:node"
-    commands["RedHat"]["property" ]["contains"]     = "%s: %s" % (name, value)
-    commands["Suse"  ]["property" ]["contains"]     = "%s=%s" % (name, value)
-    commands["RedHat"]["attribute"]["contains"]     = "%s=%s" % (name, value)
-    commands["Suse"  ]["attribute"]["contains"]     = "name=%s value=%s" % (name, value)
+    commands["redhat"]                              = {}
+    commands["suse"]                                = {}
+    commands["redhat"]["property" ]                 = {}
+    commands["suse"  ]["property" ]                 = {}
+    commands["redhat"]["attribute"]                 = {}
+    commands["suse"  ]["attribute"]                 = {}
+    commands["redhat"]["property" ]["set"]          = "pcs property set %s=%s" % (name, value)
+    commands["suse"  ]["property" ]["set"]          = "crm configure property %s=%s" % (name, value)
+    commands["redhat"]["attribute"]["set"]          = "pcs node attribute %s %s=%s" % (node, name, value)
+    commands["suse"  ]["attribute"]["set"]          = "crm node attribute %s set %s %s" % (node, name, value)
+    commands["redhat"]["property" ]["unset"]        = "pcs property unset %s" % name
+    commands["suse"  ]["property" ]["unset"]        = "crm configure property"
+    commands["redhat"]["attribute"]["unset"]        = "pcs node attribute %s %s=" % (node, name)
+    commands["suse"  ]["attribute"]["unset"]        = "crm node attribute %s delete %s" % (node, name)
+    commands["redhat"]["property" ]["get"]          = "pcs property list --all | grep %s | awk -F'[:]' '{print $2}' | tr -d '[:space:]'" % name # If the value contains spaces there will be an issue during equality comparison
+    commands["suse"  ]["property" ]["get"]          = "crm configure get_property %s | tr -d '[:space:]'" % name
+    commands["redhat"]["attribute"]["get"]          = "pcs node attribute --name %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (name, node)
+    commands["suse"  ]["attribute"]["get"]          = "crm node show %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (node, name)
+    commands["redhat"]["property" ]["check"]        = "pcs property show %s | grep %s" % (name, name)
+    commands["suse"  ]["property" ]["check"]        = "crm configure show type:property | grep %s=" % name
+    commands["redhat"]["attribute"]["check"]        = "pcs node attribute --name %s | grep %s" % (name, node)
+    commands["suse"  ]["attribute"]["check"]        = "crm node attribute %s show %s" % (node, name)
+    commands["redhat"]["property" ]["list"]         = "pcs property list"
+    commands["suse"  ]["property" ]["list"]         = "crm configure show type:property"
+    commands["redhat"]["attribute"]["list"]         = "pcs node attribute"
+    commands["suse"  ]["attribute"]["list"]         = "crm configure show type:node"
+    commands["redhat"]["property" ]["contains"]     = "%s: %s" % (name, value)
+    commands["suse"  ]["property" ]["contains"]     = "%s=%s" % (name, value)
+    commands["redhat"]["attribute"]["contains"]     = "%s=%s" % (name, value)
+    commands["suse"  ]["attribute"]["contains"]     = "name=%s value=%s" % (name, value)
 
 
     # ==== Initial checks ====
 
-    if os == "RedHat" and find_executable('pcs') is None:
+    if os == "redhat" and find_executable('pcs') is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     if state == "present" and value is None:
         module.fail_json(msg="value parameter must be supplied when state is present")
