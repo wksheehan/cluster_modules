@@ -18,12 +18,6 @@ description:
     - for RHEL or SUSE operating systems 
 
 options:
-    os:
-        description:
-            - the operating system
-        required: true
-        choices: ['RedHat', 'Suse']
-        type: str
     state:
         description:
             - "present" ensures the property is set
@@ -72,7 +66,6 @@ def run_module():
     # ==== Setup ====
     
     module_args = dict(
-        os=dict(required=True, choices=['RedHat', 'Suse']),
         state=dict(required=False, default="present", choices=['present', 'absent']),
         node=dict(required=False),
         name=dict(required=True),
@@ -89,12 +82,32 @@ def run_module():
         message=""
     )
 
-    os      = module.params['os']
     state   = module.params['state']
     node    = module.params['node']
     name    = module.params['name']
     value   = module.params['value']
     ctype   = "property" if node is None else "attribute"
+
+    # Get the os distribution
+    cmd = "egrep '^NAME=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
+    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
+    if rc != 0:
+        module.fail_json("Could not identify OS distribution", **result)
+    else:
+        if "SLES" in out:
+            os = "Suse"
+        elif "Red Hat" in out:
+            os = "RedHat"
+        else:
+            module.fail_json("Unrecognized linux distribution", **result)
+
+    # Get the os version
+    cmd = "egrep '^VERSION_ID=' /etc/os-release | awk -F'[=]' '{print $2}' | tr -d '\"[:space:]'"
+    rc, out, err = module.run_command(cmd, use_unsafe_shell=True)
+    if rc != 0:
+        module.fail_json("Could not identify OS version", **result)
+    else:
+        version = out
 
 
     # ==== Command dictionary ====
@@ -115,7 +128,7 @@ def run_module():
     commands["RedHat"]["attribute"]["unset"]        = "pcs node attribute %s %s=" % (node, name)
     commands["Suse"  ]["attribute"]["unset"]        = "crm node attribute %s delete %s" % (node, name)
     commands["RedHat"]["property" ]["get"]          = "pcs property list --all | grep %s | awk -F'[:]' '{print $2}' | tr -d '[:space:]'" % name # If the value contains spaces there will be an issue during equality comparison
-    commands["Suse"  ]["property" ]["get"]          = "crm configure get_property %s" % name
+    commands["Suse"  ]["property" ]["get"]          = "crm configure get_property %s | tr -d '[:space:]'" % name
     commands["RedHat"]["attribute"]["get"]          = "pcs node attribute --name %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (name, node)
     commands["Suse"  ]["attribute"]["get"]          = "crm node show %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (node, name)
     commands["RedHat"]["property" ]["check"]        = "pcs property show %s | grep %s" % (name, name)
@@ -172,6 +185,7 @@ def run_module():
             else:
                 result["changed"] = False
                 result["stdout"] = out
+                result["error_message"] = err
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to set " + name + " to " + value, **result)
 
@@ -185,6 +199,7 @@ def run_module():
             else:
                 result["changed"] = False
                 result["stdout"] = out
+                result["error_message"] = err
                 result["command_used"] = cmd
                 module.fail_json(msg="Failed to unset " + name, **result)
 
