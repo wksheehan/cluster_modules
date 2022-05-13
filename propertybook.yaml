@@ -14,7 +14,11 @@
         - { name: 'concurrent-fencing', value: true }
         - { name: 'stonith-timeout', value: '900' }
         - { name: 'stonith-action', value: 'reboot' }
-      register: resultobj1
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "unset already unset properties"
       cluster_property:
         state: present
@@ -25,7 +29,11 @@
         - { name: 'concurrent-fencing', value: false }
         - { name: 'stonith-timeout', value: '901' }
         - { name: 'stonith-action', value: 'poweroff' }
-      register: resultobj2
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Ensure cluster properties are set"
       cluster_property:
         state: present
@@ -36,7 +44,11 @@
         - { name: 'concurrent-fencing', value: true }
         - { name: 'stonith-timeout', value: '900' }
         - { name: 'stonith-action', value: 'reboot' }
-      register: resultobj3
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Ensure idempotence"
       cluster_property:
         state: present
@@ -47,7 +59,11 @@
         - { name: 'concurrent-fencing', value: true }
         - { name: 'stonith-timeout', value: '900' }
         - { name: 'stonith-action', value: 'reboot' }
-      register: resultobj4
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Modify cluster properties"
       cluster_property:
         state: present
@@ -58,9 +74,7 @@
         - { name: 'concurrent-fencing', value: false }
         - { name: 'stonith-timeout', value: '901' }
         - { name: 'stonith-action', value: 'poweroff' }
-      register: resultobj5
-      
+      register: resultobj
     - name: Dump the result object
       debug:
-        msg: '{{ resultobj1 resultobj2 resultobj3 resultobj4 resultobj5 }}'
-      
+        msg: '{{ resultobj }}'

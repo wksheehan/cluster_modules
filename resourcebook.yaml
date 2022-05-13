@@ -14,7 +14,11 @@
         options: |
           ip=1.1.1.1/2
           op monitor interval=10s
-      register: resultobj1
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Create cluster resource"
       cluster_resource:
         state: present
@@ -26,6 +30,10 @@
           ip=1.1.1.1/2
           op monitor interval=10s
       register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Ensure idempotence"
       cluster_resource:
         state: present
@@ -37,6 +45,10 @@
           ip=1.1.1.1/2
           op monitor interval=10s
       register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Modify the resource"
       cluster_resource:
         state: present
@@ -48,6 +60,10 @@
           ip=2.2.2.2/2
           op monitor interval=30s
       register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Try removing nonexistent resource"
       cluster_resource:
         state: absent
@@ -59,7 +75,6 @@
           ip=1.1.1.1/2
           op monitor interval=10s
       register: resultobj
-
     - name: Dump the result object
       debug:
         msg: '{{ resultobj }}'

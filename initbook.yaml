@@ -11,7 +11,11 @@
         nodes: "x0rapp00leb7 x0rapp01leb7"
         tier: "hana"
         token: "30000"
-      register: resultobj1
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Create cluster"
       cluster_init:
         state: present
@@ -19,7 +23,11 @@
         nodes: "x0rapp00leb7 x0rapp01leb7"
         tier: "hana"
         token: "30000"
-      register: resultobj2
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Remove other node"
       cluster_init:
         state: present
@@ -27,7 +35,11 @@
         nodes: "x0rapp00leb7"
         tier: "hana"
         token: "30000"
-      register: resultobj3
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Add node back"
       cluster_init:
         state: present
@@ -35,7 +47,11 @@
         nodes: "x0rapp00leb7 x0rapp01leb7"
         tier: "hana"
         token: "30000"
-      register: resultobj4
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Ensure idempotence"
       cluster_init:
         state: present
@@ -43,7 +59,11 @@
         nodes: "x0rapp00leb7 x0rapp01leb7"
         tier: "hana"
         token: "30000"
-      register: resultobj5
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
     - name: "Delete nonexistent cluster"
       cluster_init:
         state: absent
@@ -51,9 +71,8 @@
         nodes: "x0rapp00leb7 x0rapp01leb7"
         tier: "hana"
         token: "30000"
-      register: resultobj6
-      
+      register: resultobj
     - name: Dump the result object
       debug:
-        msg: '{{ resultobj1 resultobj2 resultobj3 resultobj4 resultobj5 resultobj6 }}'
+        msg: '{{ resultobj }}'
       
