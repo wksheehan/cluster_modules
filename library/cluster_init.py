@@ -167,8 +167,8 @@ def run_module():
     commands["RedHat"]["7"  ]["setup"]          = "pcs cluster setup --name %s %s --token %s" % (desired_cluster_name, nodes, token)
     commands["RedHat"]["8"  ]["setup"]          = "pcs cluster setup %s %s totem token=%s" % (desired_cluster_name, nodes, token)
     commands["Suse"  ]["all"]["setup"]          = "ha-cluster-init -y --name '%s' --interface eth0 --no-overwrite-sshkey --nodes '%s'" % (desired_cluster_name, nodes) # password needs to be configured and passed into command
-    commands["RedHat"]["7"  ]["destroy"]        = "pcs cluster destroy"
-    commands["RedHat"]["8"  ]["destroy"]        = "pcs cluster destroy"
+    commands["RedHat"]["7"  ]["destroy"]        = "pcs cluster destroy --all"
+    commands["RedHat"]["8"  ]["destroy"]        = "pcs cluster destroy --all"
     commands["Suse"  ]["all"]["destroy"]        = "crm cluster remove -y -c %s %s --force" # % (curr_node, " ".join(nodes_set))
     commands["RedHat"]["7"  ]["add"]            = "pcs cluster node add "
     commands["RedHat"]["8"  ]["add"]            = "pcs cluster node add "
@@ -364,7 +364,7 @@ def run_module():
             join_cluster()
         else:
             setup_cluster()
-        if not module.check_mode:
+        if not module.check_mode and curr_node in nodes_set:
             # Ensure cluster is started
             start_all() if os == "RedHat" else start_cluster()
             # Wait for all nodes to go online
