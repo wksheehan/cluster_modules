@@ -105,7 +105,7 @@ def run_module():
     commands["RedHat"]["attribute"]["set"]          = "pcs node attribute %s %s=%s" % (node, name, value)
     commands["Suse"  ]["attribute"]["set"]          = "crm node attribute %s set %s %s" % (node, name, value)
     commands["RedHat"]["property" ]["unset"]        = "pcs property unset %s" % name
-    commands["Suse"  ]["property" ]["unset"]        = "crm configure property"
+    commands["Suse"  ]["property" ]["unset"]        = "crm_attribute --delete --name %s" % name
     commands["RedHat"]["attribute"]["unset"]        = "pcs node attribute %s %s=" % (node, name)
     commands["Suse"  ]["attribute"]["unset"]        = "crm node attribute %s delete %s" % (node, name)
     commands["RedHat"]["property" ]["get"]          = "pcs property list --all | grep %s | awk -F'[:]' '{print $2}' | tr -d '[:space:]'" % name # If the value contains spaces there will be an issue during equality comparison
