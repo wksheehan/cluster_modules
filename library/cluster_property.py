@@ -179,12 +179,12 @@ def run_module():
         if get_property() != value:
             set_property()
         else:
-            result["message"] += "No changes needed: %s is already set. " % ctype
+            result["message"] += "No changes needed: %s is already set to %s. " % (name, value)
     else:
         if check_property():
             unset_property()
         else:
-            result["message"] += "No changes needed: %s is not currently set. " % ctype
+            result["message"] += "No changes needed: %s has not been modified from its default value. " % name
 
     # Success
     module.exit_json(**result)
