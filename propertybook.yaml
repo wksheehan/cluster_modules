@@ -73,7 +73,7 @@
         - { name: 'stonith-enabled', value: false }
         - { name: 'concurrent-fencing', value: false }
         - { name: 'stonith-timeout', value: '901' }
-        - { name: 'stonith-action', value: 'poweroff' }
+        - { name: 'stonith-action', value: 'reboot' }
       register: resultobj
     - name: Dump the result object
       debug:

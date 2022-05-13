@@ -30,6 +30,9 @@ options:
     name:
         description:
             - the name of the cluster resource
+            - module will override any existing resource with this name, unless:
+                - existing resource is type stonith, and you are configuring a primitive (failure)
+                - existing resource is type primitive, and you are configuring a stonith (failure)
         required: true
         type: str
     resource_class:

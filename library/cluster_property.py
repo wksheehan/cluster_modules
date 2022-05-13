@@ -132,7 +132,7 @@ def run_module():
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     if state == "present" and value is None:
         module.fail_json(msg="value parameter must be supplied when state is present")
-    # Make sure we can communicate with pcs
+    # Make sure we can communicate with the cluster
     rc, out, err = module.run_command(commands[os][ctype]["list"])
     if rc != 0:
         module.fail_json(msg="Unable to retreive cluster properties or node attributes. Is the cluster running?", **result)
