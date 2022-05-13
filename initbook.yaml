@@ -38,11 +38,21 @@
       debug:
         msg: '{{ resultobj }}'
 
+    - name: "Set node to remove per OS"
+      ansible.builtin.set_fact:
+        removeme: "x0rapp01leb7"
+      when: ansible_os_family == "RedHat"
+
+    - name: "Set node to remove per OS"
+      ansible.builtin.set_fact:
+        removeme: "x00app01l650"
+      when: ansible_os_family == "Suse"
+
     - name: "Remove other node"
       cluster_init:
         state: present
         sid: "wills-sid-123"
-        nodes: "x0rapp00leb7"
+        nodes: "{{ removeme }}"
         tier: "hana"
         token: "30000"
       register: resultobj
