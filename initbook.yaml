@@ -4,11 +4,21 @@
   become_user: root
   name: "Cluster init testing"
   tasks:
+    - name: "Set the nodes list per OS"
+      ansible.builtin.set_fact:
+        nodelist: "x0rapp00leb7 x0rapp01leb7"
+      when: ansible_os_family == "RedHat"
+    
+    - name: "Set the nodes list per OS"
+      ansible.builtin.set_fact:
+        nodelist: "x00app00l650 x00app01l650"
+      when: ansible_os_family == "Suse"
+
     - name: "Ensure cluster does not exist"
       cluster_init:
         state: absent
         sid: "wills-sid-123"
-        nodes: "x0rapp00leb7 x0rapp01leb7"
+        nodes: "{{ nodelist }}"
         tier: "hana"
         token: "30000"
       register: resultobj
@@ -20,7 +30,7 @@
       cluster_init:
         state: present
         sid: "wills-sid-123"
-        nodes: "x0rapp00leb7 x0rapp01leb7"
+        nodes: "{{ nodelist }}"
         tier: "hana"
         token: "30000"
       register: resultobj
@@ -44,7 +54,7 @@
       cluster_init:
         state: present
         sid: "wills-sid-123"
-        nodes: "x0rapp00leb7 x0rapp01leb7"
+        nodes: "{{ nodelist }}"
         tier: "hana"
         token: "30000"
       register: resultobj
@@ -56,7 +66,7 @@
       cluster_init:
         state: present
         sid: "wills-sid-123"
-        nodes: "x0rapp00leb7 x0rapp01leb7"
+        nodes: "{{ nodelist }}"
         tier: "hana"
         token: "30000"
       register: resultobj
@@ -68,7 +78,7 @@
       cluster_init:
         state: absent
         sid: "idontexist"
-        nodes: "x0rapp00leb7 x0rapp01leb7"
+        nodes: "{{ nodelist }}"
         tier: "hana"
         token: "30000"
       register: resultobj
