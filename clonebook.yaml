@@ -29,7 +29,7 @@
         state: present
         resource_name: myhanaresource
         options: |
-          clone clone-max=2 clone-node-max=1 interleave=true
+          clone-max=2 clone-node-max=1 interleave=true
       register: resultobj
     - name: Dump the result object
       debug:
@@ -40,7 +40,7 @@
         state: present
         resource_name: myhanaresource
         options: |
-          clone clone-max=2 clone-node-max=1 interleave=true notify=true
+          clone-max=2 clone-node-max=1 interleave=true notify=true
       register: resultobj
     - name: Dump the result object
       debug:
@@ -51,7 +51,7 @@
         state: present
         resource_name: myhanaresource
         options: |
-          clone clone-max=2 clone-node-max=1 interleave=true notify=true
+          clone-max=2 clone-node-max=1 interleave=true notify=true
       register: resultobj
     - name: Dump the result object
       debug:
@@ -62,7 +62,7 @@
         state: present
         resource_name: myfakeresource
         options: |
-          clone clone-max=2 clone-node-max=1 interleave=true notify=true
+          clone-max=2 clone-node-max=1 interleave=true notify=true
       register: resultobj
     - name: Dump the result object
       debug:
