@@ -115,14 +115,16 @@ def run_module():
     commands["Suse"  ]["cib"]["delete"]             = "crm cib delete %s"    # % new_cib_name
     commands["RedHat"]["clone"]                     = {}
     commands["Suse"  ]["clone"]                     = {}
+    commands["RedHat"]["resource"]                  = {}
+    commands["Suse"  ]["resource"]                  = {}
     commands["RedHat"]["resource"]["read"]          = f"pcs resource config {resource_name}"
     commands["Suse"  ]["resource"]["read"]          = f"crm config show {resource_name}" 
-    commands["RedHat"]["clone"]["read"]             = f"pcs resource config {resource_name}" ### % resource_name-clone
-    commands["Suse"  ]["clone"]["read"]             = f"crm config show {resource_name}" ### % clone_name
+    commands["RedHat"]["clone"]["read"]             = f"pcs resource config {clone_name}" ### % resource_name-clone
+    commands["Suse"  ]["clone"]["read"]             = f"crm config show {clone_name}" ### % clone_name
     commands["RedHat"]["clone"]["create"]           = f"pcs resource clone {resource_name} {options}" ### % resource_name, clone_options
     commands["Suse"  ]["clone"]["create"]           = f"crm configure clone {clone_name} {resource_name} meta promotable=true {options}" ###
     commands["RedHat"]["clone"]["delete"]           = f"pcs resource unclone {resource_name}" ###
-    commands["Suse"  ]["clone"]["delete"]           = f"crm configure delete --force {resource_name}" ###
+    commands["Suse"  ]["clone"]["delete"]           = f"crm configure delete --force {clone_name}" ###
     commands["Suse"  ]["clone"]["shadow_create"]    = f"crm -F -c {new_cib_name} configure clone {clone_name} {resource_name} meta promotable=true {options}"
     commands["RedHat"]["clone"]["shadow_create"]    = f"pcs -f {new_cib_name} resource clone {resource_name} {options}"
     commands["Suse"  ]["clone"]["shadow_delete"]    = f"pcs -f {new_cib_name} resource unclone {resource_name}"
