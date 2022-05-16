@@ -109,6 +109,8 @@ def run_module():
     commands["Suse"  ]["status"]                    = "crm status"
     commands["RedHat"]["cib"]                       = {}
     commands["Suse"  ]["cib"]                       = {}
+    commands["RedHat"]["cib"]["create"]             = "cluster cib %s" % new_cib_name
+    commands["Suse"  ]["cib"]["create"]             = "crm cib new %s" % new_cib_name
     commands["RedHat"]["cib"]["push"]               = "pcs cluster cib-push --config %s" # % new_cib_name
     commands["Suse"  ]["cib"]["push"]               = "crm cib commit %s"    # % new_cib_name
     commands["RedHat"]["cib"]["delete"]             = "rm -f %s" # % new_cib_name
@@ -179,12 +181,11 @@ def run_module():
         if not OS.path.isfile(curr_cib_path):
             module.fail_json(msg="Unable to find CIB file for existing resource", **result)
 
-        # Initialize a shadow cib file in os == Suse case
-        if os == "Suse":
-            cmd = "crm cib new %s" % new_cib_name
-            execute_command(module, result, cmd,
-                            "Successfully initialized shadow cib file. ",
-                            "Error creating shadow cib file before updating clone")
+        # Initialize a shadow cib file
+        cmd = commands[os]["cib"]["create"]
+        execute_command(module, result, cmd,
+                        "Successfully initialized temporary (shadow) cib file. ",
+                        "Error creating temporary (shadow) cib file before updating clone")
         
         # Remove the existing clone using shadow cib
         cmd = commands[os]["clone"]["shadow_delete"]
