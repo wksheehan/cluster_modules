@@ -125,10 +125,10 @@ def run_module():
     commands["Suse"  ]["clone"]["create"]           = f"crm configure clone {clone_name} {resource_name} meta promotable=true {options}" ###
     commands["RedHat"]["clone"]["delete"]           = f"pcs resource unclone {resource_name}" ###
     commands["Suse"  ]["clone"]["delete"]           = f"crm configure delete --force {clone_name}" ###
-    commands["Suse"  ]["clone"]["shadow_create"]    = f"crm -F -c {new_cib_name} configure clone {clone_name} {resource_name} meta promotable=true {options}"
     commands["RedHat"]["clone"]["shadow_create"]    = f"pcs -f {new_cib_name} resource clone {resource_name} {options}"
-    commands["Suse"  ]["clone"]["shadow_delete"]    = f"pcs -f {new_cib_name} resource unclone {resource_name}"
-    commands["RedHat"]["clone"]["shadow_delete"]    = f"crm -F -c {new_cib_name} configure delete --force {resource_name}"
+    commands["Suse"  ]["clone"]["shadow_create"]    = f"crm -F -c {new_cib_name} configure clone {clone_name} {resource_name} meta promotable=true {options}"
+    commands["RedHat"]["clone"]["shadow_delete"]    = f"pcs -f {new_cib_name} resource unclone {resource_name}"
+    commands["Suse"  ]["clone"]["shadow_delete"]    = f"crm -F -c {new_cib_name} configure delete --force {resource_name}"
     
 
     # ==== Initial checks ====
@@ -155,7 +155,7 @@ def run_module():
         # Check that underlying resource exists
         cmd = commands[os]["resource"]["read"]
         execute_command(module, result, cmd,
-                        "Found underlying resource to clone",
+                        "Found underlying resource to clone. ",
                         "Underlying resource to be cloned was not found")
         result["changed"] = True
         if not module.check_mode:
