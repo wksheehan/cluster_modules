@@ -245,7 +245,7 @@ def run_module():
                 curr_resource[:] = new_resource[:]
                 
                 # Write the new XML to shadow cib / temporary cib file
-                updated_xml=ET.ElementTree(curr_cib.getroot()) # Get the updated xml
+                updated_xml = ET.ElementTree(curr_cib.getroot()) # Get the updated xml
                 updated_xml.write(new_cib_path)  # Write the xml to the temporary (shadow) cib
 
                 # Update the live cluster

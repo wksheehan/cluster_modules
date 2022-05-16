@@ -1,0 +1,69 @@
+- hosts: localhost
+  become: yes
+  become_user: root
+  name: "Cluster clone testing"
+  tasks:
+    - name: "Unclone hana resource"
+      cluster_clone:
+        state: absent
+        resource_name: myhanaresource
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Ensure hana resource exists"
+      cluster_resource:
+        state: present
+        name: myhanaresource
+        resource_type: SAPHanaTopology
+        options: |
+          SID=mysid1233456 InstanceNumber=123412224 op start timeout=600 op stop timeout=300 op monitor interval=10 timeout=600
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Make hana resource clone"
+      cluster_clone:
+        state: present
+        resource_name: myhanaresource
+        options: |
+          clone clone-max=2 clone-node-max=1 interleave=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Modify hana clone"
+      cluster_clone:
+        state: present
+        resource_name: myhanaresource
+        options: |
+          clone clone-max=2 clone-node-max=1 interleave=true notify=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Ensure hana clone idempotence"
+      cluster_clone:
+        state: present
+        resource_name: myhanaresource
+        options: |
+          clone clone-max=2 clone-node-max=1 interleave=true notify=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Attempt to make clone of nonexistent resource"
+      cluster_clone:
+        state: present
+        resource_name: myfakeresource
+        options: |
+          clone clone-max=2 clone-node-max=1 interleave=true notify=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
