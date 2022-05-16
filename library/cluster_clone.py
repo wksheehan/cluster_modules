@@ -109,7 +109,7 @@ def run_module():
     commands["Suse"  ]["status"]                    = "crm status"
     commands["RedHat"]["cib"]                       = {}
     commands["Suse"  ]["cib"]                       = {}
-    commands["RedHat"]["cib"]["create"]             = "cluster cib %s" % new_cib_name
+    commands["RedHat"]["cib"]["create"]             = "pcs cluster cib %s" % new_cib_name
     commands["Suse"  ]["cib"]["create"]             = "crm cib new %s" % new_cib_name
     commands["RedHat"]["cib"]["push"]               = "pcs cluster cib-push --config %s" # % new_cib_name
     commands["Suse"  ]["cib"]["push"]               = "crm cib commit %s"    # % new_cib_name
@@ -130,7 +130,7 @@ def run_module():
     commands["RedHat"]["clone"]["shadow_create"]    = f"pcs -f {new_cib_name} resource clone {resource_name} {options}"
     commands["Suse"  ]["clone"]["shadow_create"]    = f"crm -F -c {new_cib_name} configure clone {clone_name} {resource_name} meta promotable=true {options}"
     commands["RedHat"]["clone"]["shadow_delete"]    = f"pcs -f {new_cib_name} resource unclone {resource_name}"
-    commands["Suse"  ]["clone"]["shadow_delete"]    = f"crm -F -c {new_cib_name} configure delete --force {resource_name}"
+    commands["Suse"  ]["clone"]["shadow_delete"]    = f"crm -F -c {new_cib_name} configure delete --force {clone_name}"
     
 
     # ==== Initial checks ====
@@ -157,7 +157,7 @@ def run_module():
         # Check that underlying resource exists
         cmd = commands[os]["resource"]["read"]
         execute_command(module, result, cmd,
-                        "Found underlying resource to clone. ",
+                        "",
                         "Underlying resource to be cloned was not found")
         result["changed"] = True
         if not module.check_mode:
@@ -184,19 +184,19 @@ def run_module():
         # Initialize a shadow cib file
         cmd = commands[os]["cib"]["create"]
         execute_command(module, result, cmd,
-                        "Successfully initialized temporary (shadow) cib file. ",
+                        "",
                         "Error creating temporary (shadow) cib file before updating clone")
         
         # Remove the existing clone using shadow cib
         cmd = commands[os]["clone"]["shadow_delete"]
         execute_command(module, result, cmd,
-                        "Successfully deleted existing clone using temporary (shadow) cib file. ",
+                        "",
                         "Error deleting existing clone using the temporary (shadow) cib file")
 
         # Create the desired resource using shadow cib
         cmd = commands[os]["clone"]["shadow_create"]
         execute_command(module, result, cmd,
-                        "Successfully created desired clone using temporary (shadow) cib file. ",
+                        "",
                         "Error updating the clone using the temporary (shadow) cib file")
         
         new_cib_path = f"/var/lib/pacemaker/cib/shadow.{new_cib_name}" if os == "Suse" else f"./{new_cib_name}"
