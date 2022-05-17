@@ -106,7 +106,7 @@ def run_module():
         state=dict(required=True, choices=['present','absent']),
         sid=dict(required=False),
         existing_node=dict(required=False),
-        nodes=dict(required=False),
+        nodes=dict(required=False, default=""),
         tier=dict(required=False, choices=['hana', 'scs', 'db2']),
         token=dict(required=False)
     )

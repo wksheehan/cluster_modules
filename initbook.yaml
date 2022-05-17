@@ -18,9 +18,6 @@
       cluster_init:
         state: absent
         sid: "wills-sid-123"
-        nodes: "{{ nodelist }}"
-        tier: "hana"
-        token: "30000"
       register: resultobj
     - name: Dump the result object
       debug:
@@ -88,9 +85,6 @@
       cluster_init:
         state: absent
         sid: "idontexist"
-        nodes: "{{ nodelist }}"
-        tier: "hana"
-        token: "30000"
       register: resultobj
     - name: Dump the result object
       debug:
