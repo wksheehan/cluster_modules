@@ -75,7 +75,7 @@ def run_module():
     module_args = dict(
         state=dict(required=False, default="present", choices=['present', 'absent']),
         name=dict(required=True),
-        resources=dict(required=False),
+        resources=dict(required=False, default=""),
         options=dict(required=False, default="")
     )
 
@@ -97,7 +97,7 @@ def run_module():
 
     resource_list       = resources.split()
     resource_set        = set(resource_list)
-    new_cib_name        = "shadow-cib" + str(uuid.uuid4())
+    last_resource       = resource_list[-1] if len(resource_list) > 0 else ""
 
 
     # ==== Command dictionary ====
@@ -119,8 +119,8 @@ def run_module():
     commands["Suse"  ]["remove"]           = f"crm configure modgroup {name} remove " # + resources_to_remove
     commands["RedHat"]["delete"]           = f"pcs resource group remove {name} "     # + " ".join(get_group_resources())
     commands["Suse"  ]["delete"]           = f"crm configure delete --force {name}"
-    commands["RedHat"]["sort"]             = "pcs resource group add %s %s --before %s" % (name, " ".join(resource_list[:-1]), resource_list[-1])
-    commands["Suse"  ]["sort"]             = "crm config modgroup %s add %s before %s"  % (name, " ".join(resource_list[:-1]), resource_list[-1])
+    commands["RedHat"]["sort"]             = "pcs resource group add %s %s --before %s" % (name, " ".join(resource_list[:-1]), last_resource)
+    commands["Suse"  ]["sort"]             = "crm config modgroup %s add %s before %s"  % (name, " ".join(resource_list[:-1]), last_resource)
     
 
     # ==== Initial checks ====
