@@ -38,6 +38,13 @@ options:
             - the name of the resource to be cloned
         required: true
         type: str
+    clone_type:
+        description
+            - specify "clone" or leave blank for a normal cloned resource
+            - specify "promotable" promotable to configure a promotable (master / slave) clone
+        required: false
+        default: "clone"
+        type: str
     options:
         description:
             - the clone options
@@ -70,11 +77,10 @@ def run_module():
     # ==== Setup ====
     
     module_args = dict(
-        state=dict(required=False, default="present", choices=['present', 'absent']),
+        state=dict(required=False, default="present", choices=["present", "absent"]),
         clone_name=dict(required=False),
         resource_name=dict(required=True),
-        resource_provider=dict(required=False),
-        resource_type=dict(required=False),
+        clone_type=dict(required=False, default="clone", choices=["clone", "promotable"]),
         options=dict(required=False, default="")
     )
 
@@ -92,13 +98,16 @@ def run_module():
     state               = module.params['state']
     clone_name          = module.params['clone_name']
     resource_name       = module.params['resource_name']
+    clone_type          = module.params['clone_type']
     options             = module.params['options']
 
     curr_cib_path       = "/var/lib/pacemaker/cib/cib.xml"
     new_cib_name        = "shadow-cib" + str(uuid.uuid4())
+    suse_promotable     = "promotable=true" if clone_type == "promotable" else ""
 
     if clone_name is None:
         clone_name = resource_name + "-clone"
+
 
     # ==== Command dictionary ====
 
@@ -109,26 +118,26 @@ def run_module():
     commands["Suse"  ]["status"]                    = "crm status"
     commands["RedHat"]["cib"]                       = {}
     commands["Suse"  ]["cib"]                       = {}
-    commands["RedHat"]["cib"]["create"]             = "pcs cluster cib %s" % new_cib_name
-    commands["Suse"  ]["cib"]["create"]             = "crm cib new %s" % new_cib_name
-    commands["RedHat"]["cib"]["push"]               = "pcs cluster cib-push --config %s" # % new_cib_name
-    commands["Suse"  ]["cib"]["push"]               = "crm cib commit %s"    # % new_cib_name
-    commands["RedHat"]["cib"]["delete"]             = "rm -f %s" # % new_cib_name
-    commands["Suse"  ]["cib"]["delete"]             = "crm cib delete %s"    # % new_cib_name
-    commands["RedHat"]["clone"]                     = {}
-    commands["Suse"  ]["clone"]                     = {}
+    commands["RedHat"]["cib"]["create"]             = f"pcs cluster cib {new_cib_name}"
+    commands["Suse"  ]["cib"]["create"]             = f"crm cib new {new_cib_name}"
+    commands["RedHat"]["cib"]["push"]               = f"pcs cluster cib-push --config {new_cib_name}"
+    commands["Suse"  ]["cib"]["push"]               = f"crm cib commit {new_cib_name}"
+    commands["RedHat"]["cib"]["delete"]             = f"rm -f {new_cib_name}"
+    commands["Suse"  ]["cib"]["delete"]             = f"crm cib delete {new_cib_name}"
     commands["RedHat"]["resource"]                  = {}
     commands["Suse"  ]["resource"]                  = {}
     commands["RedHat"]["resource"]["read"]          = f"pcs resource config {resource_name}"
     commands["Suse"  ]["resource"]["read"]          = f"crm config show {resource_name}" 
-    commands["RedHat"]["clone"]["read"]             = f"pcs resource config {clone_name}" ### % resource_name-clone
-    commands["Suse"  ]["clone"]["read"]             = f"crm config show {clone_name}" ### % clone_name
-    commands["RedHat"]["clone"]["create"]           = f"pcs resource clone {resource_name} {options}" ### % resource_name, clone_options
-    commands["Suse"  ]["clone"]["create"]           = f"crm configure clone {clone_name} {resource_name} meta promotable=true {options}" ###
-    commands["RedHat"]["clone"]["delete"]           = f"pcs resource unclone {resource_name}" ###
-    commands["Suse"  ]["clone"]["delete"]           = f"crm configure delete --force {clone_name}" ###
-    commands["RedHat"]["clone"]["shadow_create"]    = f"pcs -f {new_cib_name} resource clone {resource_name} {options}"
-    commands["Suse"  ]["clone"]["shadow_create"]    = f"crm -F -c {new_cib_name} configure clone {clone_name} {resource_name} meta promotable=true {options}"
+    commands["RedHat"]["clone"]                     = {}
+    commands["Suse"  ]["clone"]                     = {}
+    commands["RedHat"]["clone"]["read"]             = f"pcs resource config {clone_name}"
+    commands["Suse"  ]["clone"]["read"]             = f"crm config show {clone_name}"
+    commands["RedHat"]["clone"]["create"]           = f"pcs resource {clone_type} {resource_name} {options}"
+    commands["Suse"  ]["clone"]["create"]           = f"crm configure clone {clone_name} {resource_name} meta {suse_promotable} {options}"
+    commands["RedHat"]["clone"]["delete"]           = f"pcs resource unclone {resource_name}"
+    commands["Suse"  ]["clone"]["delete"]           = f"crm configure delete --force {clone_name}"
+    commands["RedHat"]["clone"]["shadow_create"]    = f"pcs -f {new_cib_name} resource {clone_type} {resource_name} {options}"
+    commands["Suse"  ]["clone"]["shadow_create"]    = f"crm -F -c {new_cib_name} configure clone {clone_name} {resource_name} meta {suse_promotable} {options}"
     commands["RedHat"]["clone"]["shadow_delete"]    = f"pcs -f {new_cib_name} resource unclone {resource_name}"
     commands["Suse"  ]["clone"]["shadow_delete"]    = f"crm -F -c {new_cib_name} configure delete --force {clone_name}"
     
@@ -213,7 +222,7 @@ def run_module():
             result["changed"] = True
             if not module.check_mode:
                 # Update the live cluster with the shadow cib
-                cmd = commands[os]["cib"]["push"] % new_cib_name
+                cmd = commands[os]["cib"]["push"]
                 rc, out, err = module.run_command(cmd)
                 if rc == 0:
                     result["message"] += "Successfully updated the clone. "
@@ -223,14 +232,14 @@ def run_module():
                     result["error_message"] = err
                     result["command_used"] = cmd
                     # Delete shadow configuration
-                    module.run_command(commands[os]["cib"]["delete"] % new_cib_name)
+                    module.run_command(commands[os]["cib"]["delete"])
                     module.fail_json(msg="Failed to update the clone", **result)
         # No differences
         else:
             result["message"] += "No updates necessary: clone already configured as desired. "
         
         # Delete shadow configuration
-        rc, out, err = module.run_command(commands[os]["cib"]["delete"] % new_cib_name)
+        rc, out, err = module.run_command(commands[os]["cib"]["delete"])
     
     # Compare two primitive object xmls for differences
     # Returns 1 (True) if there is a difference, 0 (False) if not

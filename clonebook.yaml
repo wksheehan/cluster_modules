@@ -3,7 +3,7 @@
   become_user: root
   name: "Cluster clone testing"
   tasks:
-    - name: "Unclone hana resource"
+    - name: "Ensure clone is not present"
       cluster_clone:
         state: absent
         resource_name: myhanaresource
@@ -35,7 +35,7 @@
       debug:
         msg: '{{ resultobj }}'
     
-    - name: "Modify hana clone"
+    - name: "Modify the hana clone"
       cluster_clone:
         state: present
         resource_name: myhanaresource
@@ -57,10 +57,91 @@
       debug:
         msg: '{{ resultobj }}'
     
-    - name: "Attempt to make clone of nonexistent resource"
+    - name: "Remove nonexistent clone"
+      cluster_clone:
+        state: absent
+        resource_name: myfakeresource
+        options: |
+          clone-max=2 clone-node-max=1 interleave=true notify=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    
+    - name: "Ensure promotable is not present"
+      cluster_clone:
+        state: absent
+        resource_name: mypromotableclone
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Ensure resource to promote exists"
+      cluster_resource:
+        state: present
+        name: mypromotableresource
+        resource_type: SAPHanaTopology
+        options: |
+          SID=mysid1233456 InstanceNumber=123412224 op start timeout=600 op stop timeout=300 op monitor interval=10 timeout=600
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Make hana promotable clone"
       cluster_clone:
         state: present
-        resource_name: myfakeresource
+        resource_name: mypromotableclone
+        clone_type: promotable
+        options: |
+          clone-max=2 clone-node-max=1 interleave=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Modify the hana promotable"
+      cluster_clone:
+        state: present
+        resource_name: mypromotableclone
+        clone_type: promotable
+        options: |
+          clone-max=2 clone-node-max=1 interleave=true notify=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Ensure hana clone idempotence"
+      cluster_clone:
+        state: present
+        resource_name: mypromotableclone
+        clone_type: promotable
+        options: |
+          clone-max=2 clone-node-max=1 interleave=true notify=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Make promotable normal clone"
+      cluster_clone:
+        state: present
+        resource_name: mypromotableclone
+        options: |
+          clone-max=2 clone-node-max=1 interleave=true notify=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Make clone promotable again"
+      cluster_clone:
+        state: present
+        resource_name: mypromotableclone
+        clone_type: promotable
         options: |
           clone-max=2 clone-node-max=1 interleave=true notify=true
       register: resultobj
