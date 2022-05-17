@@ -45,6 +45,7 @@ options:
     options:
         description:
             - the options for the resource group
+            - for use with Suse operation system
         required: true
         type: str
 author:
@@ -112,7 +113,7 @@ def run_module():
     commands["RedHat"]["get"]              = "pcs resource group list | grep %s: | awk -F'[:]' '{print $2}'" % name
     commands["Suse"  ]["get"]              = "crm config show | grep 'group %s' | cut -d' ' -f 3-" % name
     commands["RedHat"]["create"]           = f"pcs resource group add {name} {resources}"
-    commands["Suse"  ]["create"]           = f"crm configure group {name} {resources}"
+    commands["Suse"  ]["create"]           = f"crm configure group {name} {resources} {options}"
     commands["RedHat"]["add"]              = "pcs resource group add %s %s"           # % (name, resources_to_add)
     commands["Suse"  ]["add"]              = "crm configure modgroup %s add '%s'"     # % (name, resources_to_add)
     commands["RedHat"]["remove"]           = f"pcs resource group remove {name} "     # + resources_to_remove
