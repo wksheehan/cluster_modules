@@ -81,7 +81,7 @@
     - name: "Ensure resource to promote exists"
       cluster_resource:
         state: present
-        name: mypromotableresource
+        name: mypromotableclone
         resource_type: SAPHanaTopology
         options: |
           SID=mysid1233456 InstanceNumber=123412224 op start timeout=600 op stop timeout=300 op monitor interval=10 timeout=600
