@@ -282,8 +282,7 @@ def run_module():
         r2_file.close()
         
         # Compare difference
-        rc, diff, err = module.run_command(f"diff {r1_file_path} {r2_file_path}")
-        result["diff"] = diff
+        rc, diff, err = module.run_command(f"diff -w {r1_file_path} {r2_file_path}")
 
         # Delete temporary files
         module.run_command(f"rm -f {r1_file_path} {r2_file_path}")
