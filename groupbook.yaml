@@ -18,6 +18,21 @@
       debug:
         msg: '{{ resultobj }}'
     
+    - name: "Ensure cluster resource 1 idempotence"
+      cluster_resource:
+        state: present
+        name: myresource1
+        resource_class: ocf
+        resource_provider: heartbeat
+        resource_type: IPaddr2
+        options: |
+          ip=1.1.1.1
+          op monitor interval=10s
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
     - name: "Create cluster resource 2"
       cluster_resource:
         state: present
@@ -72,6 +87,21 @@
         state: present
         name: mygroup
         resources: myresource1 myresource2 myresource3
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+      
+    - name: "Ensure cluster resource 1 idempotence after adding to group"
+      cluster_resource:
+        state: present
+        name: myresource1
+        resource_class: ocf
+        resource_provider: heartbeat
+        resource_type: IPaddr2
+        options: |
+          ip=1.1.1.1
+          op monitor interval=10s
       register: resultobj
     - name: Dump the result object
       debug:
