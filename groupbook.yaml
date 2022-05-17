@@ -1,0 +1,108 @@
+- hosts: localhost
+  become: yes
+  become_user: root
+  name: "Cluster resource testing"
+  tasks:
+    - name: "Create cluster resource 1"
+      cluster_resource:
+        state: present
+        name: myresource1
+        resource_class: ocf
+        resource_provider: heartbeat
+        resource_type: IPaddr2
+        options: |
+          ip=1.1.1.1
+          op monitor interval=10s
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Create cluster resource 2"
+      cluster_resource:
+        state: present
+        name: myresource2
+        resource_class: ocf
+        resource_provider: heartbeat
+        resource_type: IPaddr2
+        options: |
+          ip=1.1.1.2
+          op monitor interval=10s
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Create cluster resource 3"
+      cluster_resource:
+        state: present
+        name: myresource3
+        resource_class: ocf
+        resource_provider: heartbeat
+        resource_type: IPaddr2
+        options: |
+          ip=1.1.1.3
+          op monitor interval=10s
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Ensure group does not exist"
+      cluster_group:
+        state: absent
+        name: mygroup
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Create new resource group with all three resources"
+      cluster_group:
+        state: present
+        name: mygroup
+        resources: myresource1 myresource2 myresource3
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Ensure idempotence"
+      cluster_group:
+        state: present
+        name: mygroup
+        resources: myresource1 myresource2 myresource3
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Rearrange group"
+      cluster_group:
+        state: present
+        name: mygroup
+        resources: myresource2 myresource1 myresource3
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Remove resources"
+      cluster_group:
+        state: present
+        name: mygroup
+        resources: myresource1
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Add resources back"
+      cluster_group:
+        state: present
+        name: mygroup
+        resources: myresource2 myresource1 myresource3
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'

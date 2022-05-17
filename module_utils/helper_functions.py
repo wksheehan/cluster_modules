@@ -24,10 +24,11 @@ def get_os_version(module, result):
         return out.split('.')[0]
 
 # Executes a command and handles the success or failure
-def execute_command(module, result, cmd, success, failure):
-    rc, out, err = module.run_command(cmd)
+def execute_command(module, result, cmd, success, failure, unsafe=False):
+    rc, out, err = module.run_command(cmd, use_unsafe_shell=unsafe)
     if rc == 0:
         result["message"] += success
+        return out
     else:
         result["changed"] = False
         result["stdout"] = out

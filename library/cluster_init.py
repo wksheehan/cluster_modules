@@ -326,15 +326,15 @@ def run_module():
         existing_nodes = get_nodes()
         nodes_to_add = nodes_set - existing_nodes
         nodes_to_remove = existing_nodes - nodes_set
+        # Configuration is as desired
+        if len(nodes_to_add) == 0 and len(nodes_to_remove) == 0:
+            result["message"] += "No changes needed: cluster is already set up with the nodes specified. "
         # Add missing nodes
         if len(nodes_to_add) > 0:
             add_nodes(nodes_to_add)
         # Remove extra nodes
         if len(nodes_to_remove) > 0:
             remove_nodes(nodes_to_remove)
-        # Configuration is as desired
-        if len(nodes_to_add) == 0 and len(nodes_to_remove) == 0:
-            result["message"] += "No changes needed: cluster is already set up with the nodes specified. "
 
     # Destroy an entire cluster configuration on all nodes
     def destroy_cluster():
