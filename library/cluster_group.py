@@ -120,7 +120,7 @@ def run_module():
     commands["RedHat"]["delete"]           = f"pcs resource group remove {name} "     # + " ".join(get_group_resources())
     commands["Suse"  ]["delete"]           = f"crm configure delete --force {name}"
     commands["RedHat"]["sort"]             = "pcs resource group add %s %s --before %s" % (name, " ".join(resource_list[:-1]), last_resource)
-    commands["Suse"  ]["sort"]             = "crm config modgroup %s add %s before %s"  % (name, " ".join(resource_list[:-1]), last_resource)
+    commands["Suse"  ]["sort"]             = "crm config modgroup %s add '%s' before %s"  % (name, " ".join(resource_list[:-1]), last_resource)
     
 
     # ==== Initial checks ====
@@ -177,7 +177,7 @@ def run_module():
             resources_to_add = " ".join(resources)
             cmd = commands[os]["add"] % (name, resources_to_add)
             execute_command(module, result, cmd,
-                            "Succesfully added the following resources to the group: " + resources_to_add,
+                            "Succesfully added the following resources to the group: %s. " % resources_to_add,
                             "Failed to add the following resources to the group: " + resources_to_add)
     
     # Removes resources from the resource group
@@ -188,15 +188,15 @@ def run_module():
                 resources_to_remove = " ".join(resources)
                 cmd = commands[os]["remove"] + resources_to_remove
                 execute_command(module, result, cmd,
-                                "Succesfully removed the following resources from the group: " + resources_to_remove,
-                                "Failed to remove the following resources from the group: " + resources_to_remove)
+                                "Succesfully removed the following resources from the group: %s. " % resources_to_remove,
+                                "Failed to remove the following resources from the group: %s" % resources_to_remove)
             # Can only remove one resource at a time when os == "Suse"
             else:
                 for resource in resources:
                     cmd = commands[os]["remove"] + resource
                     execute_command(module, result, cmd,
-                                    "Succesfully removed %s from the group. " + resource,
-                                    "Failed to remove %s from the group: " + resource)
+                                    "Succesfully removed %s from the group. " % resource,
+                                    "Failed to remove %s from the group: " % resource)
 
     # Deletes an entire resource group
     def delete_group():
@@ -206,7 +206,7 @@ def run_module():
             if os == "RedHat":
                 cmd += " ".join(get_group_resources())
             execute_command(module, result, cmd,
-                            "Succesfully destroyed the resource group",
+                            "Succesfully destroyed the resource group. ",
                             "Failed to destroy the resource group")
 
     # Rearranges the resources in the group to match the input order specified
@@ -216,10 +216,11 @@ def run_module():
             # Can't rearrange resources already in group for os == Suse
             # ==> remove them, then add them back in the correct order
             if os == "Suse":
-                cmd = commands[os]["remove"] + " ".join(resource_list[:-1])
-                execute_command(module, result, cmd,
-                            "",
-                            "Error encountered while reording resources")
+                for resource in resource_list[:-1]:
+                    cmd = commands[os]["remove"] + resource
+                    execute_command(module, result, cmd,
+                                    "",
+                                    "Failed to remove %s from the group: " % resource)
             cmd = commands[os]["sort"]
             execute_command(module, result, cmd,
                             "Successfully reordered the list. ",
