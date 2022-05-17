@@ -113,8 +113,8 @@ def run_module():
     commands["Suse"  ]["get"]              = "crm config show | grep 'group %s' | cut -d' ' -f 3-" % name
     commands["RedHat"]["create"]           = f"pcs resource group add {name} {resources}"
     commands["Suse"  ]["create"]           = f"crm configure group {name} {resources}"
-    commands["RedHat"]["add"]              = "pcs resource group add %s %s" % name         # % resources_to_add
-    commands["Suse"  ]["add"]              = "crm configure modgroup %s add '%s'" % name   # % resources_to_add
+    commands["RedHat"]["add"]              = "pcs resource group add %s %s"           # % (name, resources_to_add)
+    commands["Suse"  ]["add"]              = "crm configure modgroup %s add '%s'"     # % (name, resources_to_add)
     commands["RedHat"]["remove"]           = f"pcs resource group remove {name} "     # + resources_to_remove
     commands["Suse"  ]["remove"]           = f"crm configure modgroup {name} remove " # + resources_to_remove
     commands["RedHat"]["delete"]           = f"pcs resource group remove {name} "     # + " ".join(get_group_resources())
@@ -175,7 +175,7 @@ def run_module():
         result["changed"] = True
         if not module.check_mode:
             resources_to_add = " ".join(resources)
-            cmd = commands[os]["add"] % resources_to_add
+            cmd = commands[os]["add"] % (name, resources_to_add)
             execute_command(module, result, cmd,
                             "Succesfully added the following resources to the group: " + resources_to_add,
                             "Failed to add the following resources to the group: " + resources_to_add)
@@ -197,7 +197,7 @@ def run_module():
                     execute_command(module, result, cmd,
                                     "Succesfully removed %s from the group. " + resource,
                                     "Failed to remove %s from the group: " + resource)
-    
+
     # Deletes an entire resource group
     def delete_group():
         result["changed"] = True
