@@ -156,10 +156,7 @@ def run_module():
     # Returns true if a clone with the given name exists
     def clone_exists():
         rc, out, err = module.run_command(commands[os]["clone"]["read"])
-        if rc == 0:
-            return True
-        else:
-            return False
+        return rc == 0
 
     # Creates a new clone of a resource with the specified options
     def clone_resource():
@@ -255,7 +252,7 @@ def run_module():
         r2_file.close()
         
         # Compare difference
-        rc, diff, err = module.run_command(f"diff {r1_file_path} {r2_file_path}")
+        rc, diff, err = module.run_command(f"diff -w {r1_file_path} {r2_file_path}")
 
         # Delete temporary files
         module.run_command(f"rm -f {r1_file_path} {r2_file_path}")

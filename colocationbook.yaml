@@ -1,0 +1,127 @@
+- hosts: localhost
+  become: yes
+  become_user: root
+  name: "Cluster clone testing"
+  tasks:
+    - name: "Create cluster resource 1"
+      cluster_resource:
+        state: present
+        name: myresource1
+        resource_class: ocf
+        resource_provider: heartbeat
+        resource_type: IPaddr2
+        options: |
+          ip=1.1.1.2
+          op monitor interval=10s
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Create cluster resource 2"
+      cluster_resource:
+        state: present
+        name: myresource2
+        resource_class: ocf
+        resource_provider: heartbeat
+        resource_type: IPaddr2
+        options: |
+          ip=1.1.1.3
+          op monitor interval=10s
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Ensure colocation constraint does not exist"
+      cluster_colocation:
+        state: absent
+        source_resource: 'myresource1'
+        target_resource: 'myresource2'
+        score: 4000
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Create colocation constraint"
+      cluster_colocation:
+        state: present
+        source_resource: 'myresource1'
+        target_resource: 'myresource2'
+        score: 4000
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Ensure colocation idempotence"
+      cluster_colocation:
+        state: present
+        source_resource: 'myresource1'
+        target_resource: 'myresource2'
+        score: 4000
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Modify colocation constraint score"
+      cluster_colocation:
+        state: present
+        source_resource: 'myresource1'
+        target_resource: 'myresource2'
+        score: 1000
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Modify colocation constraint source role"
+      cluster_colocation:
+        state: present
+        source_resource: 'myresource1'
+        source_role: Stopped
+        target_resource: 'myresource2'
+        score: 1000
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Make resource1 promotable"
+      cluster_clone:
+        state: present
+        resource_name: myresource1
+        clone_type: promotable
+        options: |
+          clone-max=2 clone-node-max=1 interleave=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Make resource2 promotable"
+      cluster_clone:
+        state: present
+        resource_name: myresource2
+        clone_type: promotable
+        options: |
+          clone-max=2 clone-node-max=1 interleave=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Modify colocation constraint completely"
+      cluster_colocation:
+        state: present
+        source_resource: 'myresource2'
+        source_role: Master
+        target_resource: 'myresource1'
+        target_role: Slave
+        score: 1000
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'

@@ -175,10 +175,7 @@ def run_module():
     # Returns true if a resource with the given name exists
     def resource_exists():
         rc, out, err = module.run_command(commands[os]["resource"]["read"])
-        if rc == 0:
-            return True
-        else:
-            return False
+        return rc == 0
 
     # Creates a new resource with the specified options
     def create_resource():

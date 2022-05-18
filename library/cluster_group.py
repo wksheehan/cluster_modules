@@ -137,13 +137,10 @@ def run_module():
 
     # ==== Functions ====
     
-    # Returns true if a resource group with the given name exists
+    # Returns True if a resource group with the given name exists
     def resource_group_exists():
         rc, out, err = module.run_command(commands[os]["read"], use_unsafe_shell=True)
-        if rc == 0:
-            return True
-        else:
-            return False
+        return rc == 0
     
     # Returns the list of resources already in the specified resource group
     def get_group_resources():

@@ -151,10 +151,7 @@ def run_module():
     # Check if a property value is set to something other than default
     def check_property():
         rc, out, err = module.run_command(commands[os][ctype]["check"], use_unsafe_shell=True)
-        if rc == 0:
-            return True
-        else:
-            return False
+        return rc == 0
     
     def set_property():
         result["changed"] = True

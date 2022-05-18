@@ -126,7 +126,7 @@
       debug:
         msg: '{{ resultobj }}'
     
-    - name: "Make promotable normal clone"
+    - name: "Unpromote the clone"
       cluster_clone:
         state: present
         resource_name: mypromotableclone
@@ -137,7 +137,7 @@
       debug:
         msg: '{{ resultobj }}'
     
-    - name: "Make clone promotable again"
+    - name: "Repromote the clone again"
       cluster_clone:
         state: present
         resource_name: mypromotableclone

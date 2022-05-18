@@ -18,6 +18,7 @@
       cluster_init:
         state: absent
         sid: "wills-sid-123"
+        tier: hana
       register: resultobj
     - name: Dump the result object
       debug:
