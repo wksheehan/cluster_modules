@@ -7,9 +7,9 @@
       cluster_resource:
         state: present
         name: will1
-        refirst_class: ocf
-        refirst_provider: heartbeat
-        refirst_type: IPaddr2
+        resource: ocf
+        resource_provider: heartbeat
+        resource_type: IPaddr2
         options: |
           ip=4.4.2.2
           op monitor interval=10s
@@ -22,9 +22,9 @@
       cluster_resource:
         state: present
         name: will2
-        refirst_class: ocf
-        refirst_provider: heartbeat
-        refirst_type: IPaddr2
+        resource: ocf
+        resource_provider: heartbeat
+        resource_type: IPaddr2
         options: |
           ip=2.3.4.5
           op monitor interval=10s
@@ -36,7 +36,7 @@
     - name: "Unpromote resource 1"
       cluster_clone:
         state: absent
-        refirst_name: will1
+        resource_name: will1
         clone_type: promotable
         options: |
           clone-max=2 clone-node-max=1 interleave=true
@@ -48,7 +48,7 @@
     - name: "Unpromote resource 2"
       cluster_clone:
         state: absent
-        refirst_name: will2
+        resource_name: will2
         clone_type: promotable
         options: |
           clone-max=2 clone-node-max=1 interleave=true
