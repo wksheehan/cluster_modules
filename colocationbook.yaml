@@ -66,6 +66,19 @@
       debug:
         msg: '{{ resultobj }}'
     
+    - name: "Ensure colocation idempotence with default values"
+      cluster_colocation:
+        state: present
+        source_resource: 'myresource1'
+        source_role: Started
+        target_resource: 'myresource2'
+        target_role: Started
+        score: 4000
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
     - name: "Modify colocation constraint score"
       cluster_colocation:
         state: present
@@ -77,7 +90,7 @@
       debug:
         msg: '{{ resultobj }}'
     
-    - name: "Modify colocation constraint source role"
+    - name: "Create similar colocation contraint but with different source role"
       cluster_colocation:
         state: present
         source_resource: 'myresource1'
@@ -116,9 +129,9 @@
     - name: "Modify colocation constraint completely"
       cluster_colocation:
         state: present
-        source_resource: 'myresource2'
+        source_resource: 'myresource2-clone'
         source_role: Master
-        target_resource: 'myresource1'
+        target_resource: 'myresource1-clone'
         target_role: Slave
         score: 1000
       register: resultobj

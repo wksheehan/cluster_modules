@@ -182,16 +182,17 @@ def run_module():
     def delete_constraint(current_constraint):
         result["changed"] = True
         if not module.check_mode:
-            cmd = commands[os][version]["delete"] % current_constraint.attrib.get("id")
+            constraint_id = current_constraint.attrib.get("id")
+            cmd = commands[os][version]["delete"] % constraint_id
             execute_command(module, result, cmd, 
-                            f"Successfully deleted constraint {name}. ",
-                            f"Failed to delete constraint {name}")
+                            f"Successfully deleted constraint {constraint_id}. ",
+                            f"Failed to delete constraint {constraint_id}")
     
     def update_constraint(current_constraint):
         if current_constraint.attrib.get("score") != score:
             result["changed"] = True
             if not module.check_mode:
-                delete_constraint()
+                delete_constraint(current_constraint)
                 create_constraint()
         else:
             result["message"] += "No updates necessary: constraint already configured as desired. "
