@@ -115,7 +115,7 @@ def run_module():
     version             = get_os_version(module, result)
     state               = module.params['state']
     name                = module.params['name']
-    source_resource     = module.params['node']
+    source_resource     = module.params['source_resource']
     target_resource     = module.params['target_resource']
     source_role         = module.params['source_role']
     target_role         = module.params['target_role']
@@ -124,7 +124,7 @@ def run_module():
     if os == "Suse":
         version = "all"
     if name is None:
-        name = f"colocation-{source_resource}-{target_resource}-{score}"
+        name = f"colocation-{source_role}-{source_resource}-{target_role}-{target_resource}-{score}"
 
 
     # ==== COMMAND DICTIONARY ====
@@ -137,15 +137,12 @@ def run_module():
     commands["RedHat"]["7"  ]                       = {}
     commands["RedHat"]["8"  ]                       = {}
     commands["Suse"  ]["all"]                       = {}
-    commands["RedHat"]["7"  ]["read"]               = f"pcs constraint colocation show --full | grep id:{name}"
-    commands["RedHat"]["8"  ]["read"]               = f"pcs constraint colocation show --full | grep id:{name}"
-    commands["Suse"  ]["all"]["read"]               = f"crm configure show type:colocation | grep {name}"
     commands["RedHat"]["7"  ]["create"]             = f"pcs constraint colocation add {source_role} {source_resource} with {target_role} {target_resource} {score} id={name}"
     commands["RedHat"]["8"  ]["create"]             = f"pcs constraint colocation add {source_role} {source_resource} with {target_role} {target_resource} {score} id={name}"
     commands["Suse"  ]["all"]["create"]             = f"colocation {name} {score}: {source_resource}:{source_role} {target_resource}:{target_role}"
-    commands["RedHat"]["7"  ]["delete"]             = f"pcs constraint colocation remove {source_resource} {target_resource}"
-    commands["RedHat"]["8"  ]["delete"]             = f"pcs constraint colocation remove {source_resource} {target_resource}"
-    commands["Suse"  ]["all"]["delete"]             = f"crm configure delete --force {name}"
+    commands["RedHat"]["7"  ]["delete"]             = "pcs constraint delete %s"        # % current_constraint.attrib.get("id")
+    commands["RedHat"]["8"  ]["delete"]             = "pcs constraint delete %s"        # % current_constraint.attrib.get("id")
+    commands["Suse"  ]["all"]["delete"]             = "crm configure delete --force %s" # % current_constraint.attrib.get("id")
 
     # ==== INITIAL CHECKS ====
 
@@ -159,28 +156,39 @@ def run_module():
 
     # ==== FUNCTIONS ====
 
-    def constraint_exists():
-        rc, out, err = module.run_command(commands[os][version]["read"], use_unsafe_shell=True)
-        return rc == 0
+    # If found, returns the xml object of the existing constraint that matches the configuration, otherwise returns None
+    def get_current_constraint():
+        cib = ET.parse("/var/lib/pacemaker/cib/cib.xml")
+        constraint_contenders = cib.getroot().findall(f".//rsc_colocation[@rsc='{source_resource}'][@with-rsc='{target_resource}']")
+         
+        if constraint_contenders == None or len(constraint_contenders) == 0:
+            return None
+
+        for constraint in constraint_contenders:
+            if (constraint.attrib.get("rsc-role", "Started") == source_role and 
+            constraint.attrib.get("with-rsc-role", "Started") == target_role):
+                return constraint
+        
+        return None
     
     def create_constraint():
         result["changed"] = True
         if not module.check_mode:
             cmd = commands[os][version]["create"]
             execute_command(module, result, cmd, 
-                            f"Successfully created constraint {name}. "  
+                            f"Successfully created constraint {name}. ",  
                             f"Failed to create constraint {name}")
 
-    def delete_constraint():
+    def delete_constraint(current_constraint):
         result["changed"] = True
         if not module.check_mode:
-            cmd = commands[os][version]["delete"]
+            cmd = commands[os][version]["delete"] % current_constraint.attrib.get("id")
             execute_command(module, result, cmd, 
                             f"Successfully deleted constraint {name}. ",
                             f"Failed to delete constraint {name}")
     
-    def update_constraint():
-        if not compare_constraints():
+    def update_constraint(current_constraint):
+        if current_constraint.attrib.get("score") != score:
             result["changed"] = True
             if not module.check_mode:
                 delete_constraint()
@@ -188,38 +196,21 @@ def run_module():
         else:
             result["message"] += "No updates necessary: constraint already configured as desired. "
 
-    # Compare existing resource constraint against desired resource constraint
-    # Returns True if the constraints are equivalent, False if they are different
-    def compare_constraints():
-         cib = ET.parse("/var/lib/pacemaker/cib/cib.xml")
-         curr_constraint = cib.getroot().find(f".//rsc_colocation[@id='{name}']")
-         
-         if curr_constraint == None:
-             module.fail_json(msg="Could not find constraint in the cib file", **result)
-
-         constraint_attributes = curr_constraint.attrib
-
-         return (
-                constraint_attributes.get("rsc") == source_resource and
-                constraint_attributes.get("rsc-role", "Started") == source_role and
-                constraint_attributes.get("with-rsc") == target_resource and
-                constraint_attributes.get("with-rsc-role", "Started") == target_role and
-                constraint_attributes.get("score", "INFINITY") == score
-         )
-
 
     # ==== MAIN CODE ====
 
+    current_constraint = get_current_constraint()
+
     if state == "present":
-        if constraint_exists():
-            update_constraint()
+        if current_constraint != None:
+            update_constraint(current_constraint)
         else:
             create_constraint()
     else:
-        if constraint_exists():
-            delete_constraint()
+        if current_constraint != None:
+            delete_constraint(current_constraint)
         else:
-            result["message"] += "No changes needed: constraint does not exist " % name
+            result["message"] += "No changes needed: constraint does not exist "
 
     # Success
     module.exit_json(**result)
