@@ -7,7 +7,7 @@
       cluster_resource:
         state: present
         name: will1
-        resource: ocf
+        resource_class: ocf
         resource_provider: heartbeat
         resource_type: IPaddr2
         options: |
@@ -22,7 +22,7 @@
       cluster_resource:
         state: present
         name: will2
-        resource: ocf
+        resource_class: ocf
         resource_provider: heartbeat
         resource_type: IPaddr2
         options: |
