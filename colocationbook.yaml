@@ -33,6 +33,30 @@
       debug:
         msg: '{{ resultobj }}'
     
+    - name: "Unpromote resource1"
+      cluster_clone:
+        state: absent
+        resource_name: myresource1
+        clone_type: promotable
+        options: |
+          clone-max=2 clone-node-max=1 interleave=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Unpromote resource2"
+      cluster_clone:
+        state: absent
+        resource_name: myresource2
+        clone_type: promotable
+        options: |
+          clone-max=2 clone-node-max=1 interleave=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
     - name: "Ensure colocation constraint does not exist"
       cluster_colocation:
         state: absent
