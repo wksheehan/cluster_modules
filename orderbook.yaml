@@ -1,0 +1,146 @@
+- hosts: localhost
+  become: yes
+  become_user: root
+  name: "Cluster resource order testing"
+  tasks:
+    - name: "Create cluster resource 1"
+      cluster_resource:
+        state: present
+        name: will1
+        refirst_class: ocf
+        refirst_provider: heartbeat
+        refirst_type: IPaddr2
+        options: |
+          ip=4.4.2.2
+          op monitor interval=10s
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Create cluster resource 2"
+      cluster_resource:
+        state: present
+        name: will2
+        refirst_class: ocf
+        refirst_provider: heartbeat
+        refirst_type: IPaddr2
+        options: |
+          ip=2.3.4.5
+          op monitor interval=10s
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Unpromote resource 1"
+      cluster_clone:
+        state: absent
+        refirst_name: will1
+        clone_type: promotable
+        options: |
+          clone-max=2 clone-node-max=1 interleave=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Unpromote resource 2"
+      cluster_clone:
+        state: absent
+        refirst_name: will2
+        clone_type: promotable
+        options: |
+          clone-max=2 clone-node-max=1 interleave=true
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Ensure order constraint does not exist"
+      cluster_order:
+        state: absent
+        first_resource: 'will1'
+        second_resource: 'will2'
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Ensure other order constraint does not exist"
+      cluster_order:
+        state: absent
+        first_resource: 'will1'
+        first_action: stop
+        second_resource: 'will2'
+        second_action: promote
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Create order constraint"
+      cluster_order:
+        state: present
+        first_resource: 'will1'
+        second_resource: 'will2'
+        kind: Optional
+        symmetrical: 'false'
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Ensure order idempotence"
+      cluster_order:
+        state: present
+        first_resource: 'will1'
+        second_resource: 'will2'
+        kind: Optional
+        symmetrical: 'false'
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Ensure order idempotence with default values"
+      cluster_order:
+        state: present
+        first_resource: 'will1'
+        first_action: start
+        second_resource: 'will2'
+        second_action: start
+        kind: Optional
+        symmetrical: 'false'
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Same resources, different order constraint actions"
+      cluster_order:
+        state: present
+        first_resource: 'will1'
+        first_action: stop
+        second_resource: 'will2'
+        second_action: promote
+        kind: Optional
+        symmetrical: 'false'
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Modify order constraint options"
+      cluster_order:
+        state: present
+        first_resource: 'will1'
+        first_action: stop
+        second_resource: 'will2'
+        second_action: promote
+        kind: Mandatory
+        symmetrical: 'true'
+      register: resultobj
+    - name: Dump the result object
+      debug:
+        msg: '{{ resultobj }}'

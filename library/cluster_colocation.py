@@ -22,7 +22,7 @@ options:
     state:
         description:
             - "present" ensures the colocation constraint exists
-            - "absent" ensures the colocatino contraint does not exist
+            - "absent" ensures the colocation contraint does not exist
         required: false
         default: present
         choices: ['present', 'absent']
@@ -144,6 +144,7 @@ def run_module():
     commands["RedHat"]["8"  ]["delete"]             = "pcs constraint delete %s"        # % current_constraint.attrib.get("id")
     commands["Suse"  ]["all"]["delete"]             = "crm configure delete --force %s" # % current_constraint.attrib.get("id")
 
+
     # ==== INITIAL CHECKS ====
 
     if os == "RedHat" and find_executable('pcs') is None:
@@ -211,7 +212,7 @@ def run_module():
         if current_constraint != None:
             delete_constraint(current_constraint)
         else:
-            result["message"] += "No changes needed: constraint does not exist "
+            result["message"] += "No changes needed: constraint does not exist. "
 
     # Success
     module.exit_json(**result)

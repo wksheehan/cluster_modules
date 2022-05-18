@@ -1,7 +1,7 @@
 - hosts: localhost
   become: yes
   become_user: root
-  name: "Cluster clone testing"
+  name: "Cluster resource colocation testing"
   tasks:
     - name: "Create cluster resource 1"
       cluster_resource:

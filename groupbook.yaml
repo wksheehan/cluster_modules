@@ -6,7 +6,7 @@
     - name: "Create cluster resource 1"
       cluster_resource:
         state: present
-        name: myresource1
+        name: mygroupresource1
         resource_class: ocf
         resource_provider: heartbeat
         resource_type: IPaddr2
@@ -21,7 +21,7 @@
     - name: "Ensure cluster resource 1 idempotence"
       cluster_resource:
         state: present
-        name: myresource1
+        name: mygroupresource1
         resource_class: ocf
         resource_provider: heartbeat
         resource_type: IPaddr2
@@ -36,7 +36,7 @@
     - name: "Create cluster resource 2"
       cluster_resource:
         state: present
-        name: myresource2
+        name: mygroupresource2
         resource_class: ocf
         resource_provider: heartbeat
         resource_type: IPaddr2
@@ -51,7 +51,7 @@
     - name: "Create cluster resource 3"
       cluster_resource:
         state: present
-        name: myresource3
+        name: mygroupresource3
         resource_class: ocf
         resource_provider: heartbeat
         resource_type: IPaddr2
@@ -76,7 +76,7 @@
       cluster_group:
         state: present
         name: mygroup
-        resources: myresource1 myresource2 myresource3
+        resources: mygroupresource1 mygroupresource2 mygroupresource3
       register: resultobj
     - name: Dump the result object
       debug:
@@ -86,7 +86,7 @@
       cluster_group:
         state: present
         name: mygroup
-        resources: myresource1 myresource2 myresource3
+        resources: mygroupresource1 mygroupresource2 mygroupresource3
       register: resultobj
     - name: Dump the result object
       debug:
@@ -95,7 +95,7 @@
     - name: "Ensure cluster resource 1 idempotence after adding to group"
       cluster_resource:
         state: present
-        name: myresource1
+        name: mygroupresource1
         resource_class: ocf
         resource_provider: heartbeat
         resource_type: IPaddr2
@@ -111,7 +111,7 @@
       cluster_group:
         state: present
         name: mygroup
-        resources: myresource2 myresource1 myresource3
+        resources: mygroupresource2 mygroupresource1 mygroupresource3
       register: resultobj
     - name: Dump the result object
       debug:
@@ -121,7 +121,7 @@
       cluster_group:
         state: present
         name: mygroup
-        resources: myresource1
+        resources: mygroupresource1
       register: resultobj
     - name: Dump the result object
       debug:
@@ -131,7 +131,7 @@
       cluster_group:
         state: present
         name: mygroup
-        resources: myresource2 myresource1 myresource3
+        resources: mygroupresource2 mygroupresource1 mygroupresource3
       register: resultobj
     - name: Dump the result object
       debug:
