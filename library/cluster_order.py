@@ -27,6 +27,12 @@ options:
         default: present
         choices: ['present', 'absent']
         type: str
+    name:
+        description:
+            - the id of the order constraint
+        required: false
+        default: 'order-{first_action}-{first_resource}-{second_action}-{second_resource}-{kind}-{symmetrical}'
+        type: str
     first_resource:
         description:
             - the name of the first resource in the ordering
@@ -85,6 +91,7 @@ def run_module():
     
     module_args = dict(
         state=dict(required=False, choices=["present", "absent"], default="present"),
+        name=dict(required=False),
         first_resource=dict(required=True),
         second_resource=dict(required=True),
         first_action=dict(required=False, choices=['start', 'stop', 'promote', 'demote'], default='start'),
@@ -106,6 +113,7 @@ def run_module():
     os                  = get_os_name(module, result)
     version             = get_os_version(module, result)
     state               = module.params['state']
+    name                = module.params['name']
     first_resource      = module.params['first_resource']
     second_resource     = module.params['second_resource']
     first_action        = module.params['first_action']
@@ -115,7 +123,8 @@ def run_module():
     
     if os == "Suse":
         version = "all"
-    name = f"order-{first_action}-{first_resource}-{second_action}-{second_resource}-{kind}"
+    if name is None:
+        name = f"order-{first_action}-{first_resource}-{second_action}-{second_resource}-{kind}-{symmetrical}"
 
 
     # ==== COMMAND DICTIONARY ====
@@ -128,8 +137,8 @@ def run_module():
     commands["RedHat"]["7"  ]                       = {}
     commands["RedHat"]["8"  ]                       = {}
     commands["Suse"  ]["all"]                       = {}
-    commands["RedHat"]["7"  ]["create"]             = f"pcs constraint order {first_action} {first_resource} then {second_action} {second_resource} kind={kind} symmetrical={symmetrical}"
-    commands["RedHat"]["8"  ]["create"]             = f"pcs constraint order {first_action} {first_resource} then {second_action} {second_resource} kind={kind} symmetrical={symmetrical}"
+    commands["RedHat"]["7"  ]["create"]             = f"pcs constraint order {first_action} {first_resource} then {second_action} {second_resource} kind={kind} symmetrical={symmetrical} id={name}"
+    commands["RedHat"]["8"  ]["create"]             = f"pcs constraint order {first_action} {first_resource} then {second_action} {second_resource} kind={kind} symmetrical={symmetrical} id={name}"
     commands["Suse"  ]["all"]["create"]             = f"crm configure order {name} {kind}: {first_resource}:{first_action} {second_resource}:{second_action} symmetrical={symmetrical}"
     commands["RedHat"]["7"  ]["delete"]             = "pcs constraint delete %s"        # % current_constraint.attrib.get("id")
     commands["RedHat"]["8"  ]["delete"]             = "pcs constraint delete %s"        # % current_constraint.attrib.get("id")

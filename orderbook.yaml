@@ -14,7 +14,7 @@
           ip=4.4.2.2
           op monitor interval=10s
       register: resultobj
-    - name: Dump the result object
+    - name: "Create cluster resource 1: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -29,7 +29,7 @@
           ip=2.3.4.5
           op monitor interval=10s
       register: resultobj
-    - name: Dump the result object
+    - name: "Create cluster resource 2: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -41,7 +41,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Unpromote resource 1: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -53,7 +53,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Unpromote resource 2: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -63,7 +63,7 @@
         first_resource: 'will1'
         second_resource: 'will2'
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure order constraint does not exist: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -75,7 +75,7 @@
         second_resource: 'will2'
         second_action: promote
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure other order constraint does not exist: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -87,7 +87,7 @@
         kind: Optional
         symmetrical: 'false'
       register: resultobj
-    - name: Dump the result object
+    - name: "Create order constraint: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -99,7 +99,7 @@
         kind: Optional
         symmetrical: 'false'
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure order idempotence: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -113,7 +113,7 @@
         kind: Optional
         symmetrical: 'false'
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure order idempotence with default values: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -127,7 +127,7 @@
         kind: Optional
         symmetrical: 'false'
       register: resultobj
-    - name: Dump the result object
+    - name: "Same resources, different order constraint actions: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -141,6 +141,6 @@
         kind: Mandatory
         symmetrical: 'true'
       register: resultobj
-    - name: Dump the result object
+    - name: "Modify order constraint options: Output"
       debug:
         msg: '{{ resultobj }}'

@@ -31,7 +31,7 @@ options:
         description:
             - the id of the colocation constraint
         required: false
-        default: 'colocation-{source_resource}-{target_resource}-{score}'
+        default: 'colocation-{source_role}-{source_resource}-{target_role}-{target_resource}-{score}'
         type: str
     source_resource:
         description:
