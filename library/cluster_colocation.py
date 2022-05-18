@@ -139,7 +139,7 @@ def run_module():
     commands["Suse"  ]["all"]                       = {}
     commands["RedHat"]["7"  ]["create"]             = f"pcs constraint colocation add {source_role} {source_resource} with {target_role} {target_resource} {score} id={name}"
     commands["RedHat"]["8"  ]["create"]             = f"pcs constraint colocation add {source_role} {source_resource} with {target_role} {target_resource} {score} id={name}"
-    commands["Suse"  ]["all"]["create"]             = f"colocation {name} {score}: {source_resource}:{source_role} {target_resource}:{target_role}"
+    commands["Suse"  ]["all"]["create"]             = f"crm configure colocation {name} {score}: {source_resource}:{source_role} {target_resource}:{target_role}"
     commands["RedHat"]["7"  ]["delete"]             = "pcs constraint delete %s"        # % current_constraint.attrib.get("id")
     commands["RedHat"]["8"  ]["delete"]             = "pcs constraint delete %s"        # % current_constraint.attrib.get("id")
     commands["Suse"  ]["all"]["delete"]             = "crm configure delete --force %s" # % current_constraint.attrib.get("id")
