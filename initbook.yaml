@@ -20,7 +20,7 @@
         sid: "wills-sid-123"
         tier: hana
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure cluster does not exist: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -32,7 +32,7 @@
         tier: "hana"
         token: "30000"
       register: resultobj
-    - name: Dump the result object
+    - name: "Create cluster: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -54,7 +54,7 @@
         tier: "hana"
         token: "30000"
       register: resultobj
-    - name: Dump the result object
+    - name: "Remove other node: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -66,7 +66,7 @@
         tier: "hana"
         token: "30000"
       register: resultobj
-    - name: Dump the result object
+    - name: "Add node back: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -78,7 +78,7 @@
         tier: "hana"
         token: "30000"
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure idempotence: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -87,7 +87,7 @@
         state: absent
         sid: "idontexist"
       register: resultobj
-    - name: Dump the result object
+    - name: "Delete nonexistent cluster: Output"
       debug:
         msg: '{{ resultobj }}'
       

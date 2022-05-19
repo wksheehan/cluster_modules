@@ -14,7 +14,7 @@
           ip=1.1.1.2
           op monitor interval=10s
       register: resultobj
-    - name: Dump the result object
+    - name: "Create cluster resource 1: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -29,7 +29,7 @@
           ip=1.1.1.3
           op monitor interval=10s
       register: resultobj
-    - name: Dump the result object
+    - name: "Create cluster resource 2: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -41,7 +41,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Unpromote resource1: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -53,7 +53,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Unpromote resource2: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -64,7 +64,7 @@
         target_resource: 'myresource2'
         score: 4000
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure colocation constraint does not exist: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -75,7 +75,7 @@
         target_resource: 'myresource2'
         score: 4000
       register: resultobj
-    - name: Dump the result object
+    - name: "Create colocation constraint: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -86,7 +86,7 @@
         target_resource: 'myresource2'
         score: 4000
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure colocation idempotence: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -99,7 +99,7 @@
         target_role: Started
         score: 4000
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure colocation idempotence with default values: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -110,7 +110,7 @@
         target_resource: 'myresource2'
         score: 1000
       register: resultobj
-    - name: Dump the result object
+    - name: "Modify colocation constraint score: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -122,7 +122,7 @@
         target_resource: 'myresource2'
         score: 1000
       register: resultobj
-    - name: Dump the result object
+    - name: "Create similar colocation contraint but with different source role: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -134,7 +134,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Make resource1 promotable: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -146,7 +146,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Make resource2 promotable: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -159,6 +159,6 @@
         target_role: Slave
         score: 1000
       register: resultobj
-    - name: Dump the result object
+    - name: "Modify colocation constraint completely: Output"
       debug:
         msg: '{{ resultobj }}'

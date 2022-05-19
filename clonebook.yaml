@@ -8,7 +8,7 @@
         state: absent
         resource_name: myhanaresource
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure clone is not present: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -20,7 +20,7 @@
         options: |
           SID=mysid1233456 InstanceNumber=123412224 op start timeout=600 op stop timeout=300 op monitor interval=10 timeout=600
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure hana resource exists: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -31,7 +31,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Make hana resource clone: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -42,7 +42,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true notify=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Modify the hana clone: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -53,7 +53,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true notify=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure hana clone idempotence: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -64,7 +64,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true notify=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Remove nonexistent clone: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -74,7 +74,7 @@
         state: absent
         resource_name: mypromotableclone
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure promotable is not present: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -86,7 +86,7 @@
         options: |
           SID=mysid1233456 InstanceNumber=123412224 op start timeout=600 op stop timeout=300 op monitor interval=10 timeout=600
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure resource to promote exists: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -98,7 +98,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Make hana promotable clone: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -110,7 +110,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true notify=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Modify the hana promotable: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -122,7 +122,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true notify=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure hana clone idempotence: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -133,7 +133,7 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true notify=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Unpromote the clone: Output"
       debug:
         msg: '{{ resultobj }}'
     
@@ -145,6 +145,6 @@
         options: |
           clone-max=2 clone-node-max=1 interleave=true notify=true
       register: resultobj
-    - name: Dump the result object
+    - name: "Repromote the clone again: Output"
       debug:
         msg: '{{ resultobj }}'

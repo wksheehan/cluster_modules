@@ -13,7 +13,7 @@
         - { name: 'concurrent-fencing' }
         - { name: 'stonith-timeout' }
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure cluster properties are unset: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -27,7 +27,7 @@
         - { name: 'concurrent-fencing' }
         - { name: 'stonith-timeout' }
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure unset idempotence: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -41,7 +41,7 @@
         - { name: 'concurrent-fencing', value: false }
         - { name: 'stonith-timeout', value: '100' }
       register: resultobj
-    - name: Dump the result object
+    - name: "Set cluster properties: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -55,7 +55,7 @@
         - { name: 'concurrent-fencing', value: false }
         - { name: 'stonith-timeout', value: '100' }
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure idempotence: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -69,6 +69,6 @@
         - { name: 'concurrent-fencing', value: true }
         - { name: 'stonith-timeout', value: '900' }
       register: resultobj
-    - name: Dump the result object
+    - name: "Modify cluster properties: Output"
       debug:
         msg: '{{ resultobj }}'

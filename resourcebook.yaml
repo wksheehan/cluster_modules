@@ -16,7 +16,7 @@
           power_timeout=140
           pcmk_reboot_timeout=800
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure cluster resource is absent: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -32,7 +32,7 @@
           power_timeout=140
           pcmk_reboot_timeout=800
       register: resultobj
-    - name: Dump the result object
+    - name: "Create cluster resource: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -48,7 +48,7 @@
           power_timeout=140
           pcmk_reboot_timeout=800
       register: resultobj
-    - name: Dump the result object
+    - name: "Ensure idempotence: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -64,7 +64,7 @@
           power_timeout=240
           pcmk_reboot_timeout=900
       register: resultobj
-    - name: Dump the result object
+    - name: "Modify the resource: Output"
       debug:
         msg: '{{ resultobj }}'
 
@@ -80,7 +80,7 @@
           power_timeout=240
           pcmk_reboot_timeout=900
       register: resultobj
-    - name: Dump the result object
+    - name: "Try removing nonexistent resource: Output"
       debug:
         msg: '{{ resultobj }}'
       
