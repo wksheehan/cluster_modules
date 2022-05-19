@@ -100,10 +100,10 @@ def run_module():
     commands["Suse"  ]                              = {}
     commands["RedHat"]["status"]                    = "pcs status"
     commands["Suse"  ]["status"]                    = "crm status"
-    commands["RedHat"]                              = {}
-    commands["Suse"  ]                              = {}
-    commands["RedHat"]                              = {}
-    commands["Suse"  ]                              = {}
+    commands["RedHat"]["rsc"]                       = {}
+    commands["Suse"  ]["rsc"]                       = {}
+    commands["RedHat"]["op"]                        = {}
+    commands["Suse"  ]["op"]                        = {}
     commands["RedHat"]["rsc"]["set"]                = f"pcs resource defaults {name}={value}"
     commands["Suse"  ]["rsc"]["set"]                = f"crm configure rsc_defaults {name}={value}"
     commands["RedHat"]["op" ]["set"]                = f"pcs resource op defaults {name}={value}"
