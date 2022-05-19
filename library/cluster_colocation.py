@@ -162,7 +162,7 @@ def run_module():
         cib = ET.parse("/var/lib/pacemaker/cib/cib.xml")
         constraint_contenders = cib.getroot().findall(f".//rsc_colocation[@rsc='{source_resource}'][@with-rsc='{target_resource}']")
          
-        if constraint_contenders == None or len(constraint_contenders) == 0:
+        if constraint_contenders is None or len(constraint_contenders) == 0:
             return None
 
         for constraint in constraint_contenders:
