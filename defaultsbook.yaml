@@ -41,7 +41,7 @@
       loop:
         - { name: 'resource-stickiness', dtype: 'rsc', value: '1099' }
         - { name: 'migration-threshold', dtype: 'rsc', value: '5099' }
-        - { name: 'record-pending', dtype: 'op', value: false }
+        - { name: 'record-pending', dtype: 'op', value: "false" }
       register: resultobj
     - name: "Set cluster defaults: Output"
       debug:
@@ -56,7 +56,7 @@
       loop:
         - { name: 'resource-stickiness', dtype: 'rsc', value: '1099' }
         - { name: 'migration-threshold', dtype: 'rsc', value: '5099' }
-        - { name: 'record-pending', dtype: 'op', value: false }
+        - { name: 'record-pending', dtype: 'op', value: "false" }
       register: resultobj
     - name: "Ensure idempotence: Output"
       debug:
@@ -71,7 +71,7 @@
       loop:
         - { name: 'resource-stickiness', dtype: 'rsc', value: '1000' }
         - { name: 'migration-threshold', dtype: 'rsc', value: '5000' }
-        - { name: 'record-pending', dtype: 'op', value: true }
+        - { name: 'record-pending', dtype: 'op', value: "true" }
       register: resultobj
     - name: "Modify cluster defaults: Output"
       debug:

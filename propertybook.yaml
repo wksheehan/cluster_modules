@@ -36,8 +36,8 @@
         name: "{{ item.name }}"
         value: "{{ item.value }}"
       loop:
-        - { name: 'stonith-enabled', value: false }
-        - { name: 'concurrent-fencing', value: false }
+        - { name: 'stonith-enabled', value: "false" }
+        - { name: 'concurrent-fencing', value: "false" }
         - { name: 'stonith-timeout', value: '100' }
       register: resultobj
     - name: "Set cluster properties: Output"
@@ -50,8 +50,8 @@
         name: "{{ item.name }}"
         value: "{{ item.value }}"
       loop:
-        - { name: 'stonith-enabled', value: false }
-        - { name: 'concurrent-fencing', value: false }
+        - { name: 'stonith-enabled', value: "false" }
+        - { name: 'concurrent-fencing', value: "false" }
         - { name: 'stonith-timeout', value: '100' }
       register: resultobj
     - name: "Ensure idempotence: Output"
@@ -64,8 +64,8 @@
         name: "{{ item.name }}"
         value: "{{ item.value }}"
       loop:
-        - { name: 'stonith-enabled', value: true }
-        - { name: 'concurrent-fencing', value: true }
+        - { name: 'stonith-enabled', value: "true" }
+        - { name: 'concurrent-fencing', value: "true" }
         - { name: 'stonith-timeout', value: '900' }
       register: resultobj
     - name: "Modify cluster properties: Output"
