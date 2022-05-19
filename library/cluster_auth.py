@@ -17,6 +17,14 @@ version_added: "1.0"
 description: authenticates the user on one or more nodes to be used in a cluster on RHEL operating system 
 
 options:
+    state:
+        description:
+            - present will ensure the nodes are authenticated
+            - absent will ensure the nodes are deauthenticated
+        required: false
+        choices: ['present', 'absent']
+        default: 'present'
+        type: str
     nodes:
         description:
             - the nodes to authenticate or deauthenticate
@@ -48,7 +56,7 @@ EXAMPLES = r'''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.helper_functions import get_os_version, execute_command
+from ansible.module_utils.helper_functions import get_os_name, get_os_version, execute_command
 from distutils.spawn import find_executable
 
 def run_module():
@@ -57,6 +65,7 @@ def run_module():
 
     module_args = dict(
         nodes=dict(required=True),
+        state=dict(required=True, default="present"),
         username=dict(required=False, default="hacluster"),
         password=dict(required=True, no_log=True)
     )
@@ -71,7 +80,9 @@ def run_module():
         message=""
     )
 
+    os          = get_os_name(module, result)
     version     = get_os_version(module, result)
+    state       = module.params['state']
     nodes       = module.params['nodes']
     username    = module.params['username']
     password    = module.params['password']
@@ -82,25 +93,46 @@ def run_module():
     if find_executable('pcs') is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     
+
+    # ==== COMMAND DICTIONARY ==== 
+
+    commands                                        = {}
+    commands["RedHat"]                              = {}
+    commands["RedHat"]["status"]                    = "pcs cluster pcsd-status %s" % nodes
+    commands["RedHat"]["7"]                         = {}
+    commands["RedHat"]["8"]                         = {}
+    commands["RedHat"]["7"]["authenticate"]         = "pcs cluster auth %s -u %s -p %s" % (nodes, username, password)
+    commands["RedHat"]["8"]["authenticate"]         = "pcs host auth %s -u %s -p %s" % (nodes, username, password)
+    commands["RedHat"]["7"]["deauthenticate"]       = "pcs cluster deauth %s" % nodes
+    commands["RedHat"]["8"]["deauthenticate"]       = "pcs host deauth %s" % nodes
+    
     
     # ==== MAIN CODE ====
 
-    rc, out, err = module.run_command('pcs cluster pcsd-status %s' % nodes)
+    rc, out, err = module.run_command(commands[os]["status"])
+    nodes_online = rc == 0
 
-    if rc == 0:
-        result["message"] = "Nodes %s are all online" % nodes
-    else:
-        result["changed"] = True
-        if not module.check_mode:
-            if version == "7":
-                cmd = "pcs cluster auth %s -u %s -p %s" % (nodes, username, password)
-            elif version == "8":
-                cmd = "pcs host auth %s -u %s -p %s" % (nodes, username, password)
-            else:
-                module.fail_json(msg='Incorrect operating system version specified', **result)
-            execute_command(module, result, cmd, 
+    if state == "present":
+        if nodes_online:
+            result["message"] = "Nodes %s are all authenticated" % nodes
+        else:
+            result["changed"] = True
+            if not module.check_mode:
+                cmd = commands[os][version]["authenticate"]
+                execute_command(module, result, cmd, 
                             "Nodes were successfully authenticated", 
-                            "Failed to authenticated to one or more nodes")
+                            "Failed to authenticate one or more nodes")
+    if state == "absent":
+        if nodes_online:    
+            result["changed"] = True
+            if not module.check_mode:
+                cmd = commands[os][version]["deauthenticate"]
+                execute_command(module, result, cmd, 
+                            "Nodes were successfully deauthenticated", 
+                            "Failed to deauthenticate one or more nodes")
+        else:
+            result["message"] = "Nodes %s are already unauthenticated" % nodes
+        
 
     # Success
     module.exit_json(**result)

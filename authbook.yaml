@@ -4,13 +4,13 @@
   become_user: root
   name: "Cluster auth testing"
   tasks:
-    - name: Cluster auth
+    - name: "Cluster auth"
       cluster_auth:
         nodes: "x0rapp00leb7 x0rapp01leb7"
         username: hacluster
         password: "TestPass123!"
       register: resultobj
       
-    - name: Dump the result object
+    - name: "Cluster auth: Output"
       debug:
         msg: '{{ resultobj }}'
