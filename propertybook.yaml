@@ -21,7 +21,6 @@
       cluster_property:
         state: absent
         name: "{{ item.name }}"
-        value: "{{ item.value }}"
       loop:
         - { name: 'stonith-enabled' }
         - { name: 'concurrent-fencing' }
