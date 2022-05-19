@@ -11,7 +11,7 @@
         resource_provider: heartbeat
         resource_type: IPaddr2
         options: |
-          ip=1.1.1.1
+          ip=9.9.7.7
           op monitor interval=10s
       register: resultobj
     - name: "Create cluster resource 1: Output"
@@ -26,7 +26,7 @@
         resource_provider: heartbeat
         resource_type: IPaddr2
         options: |
-          ip=1.1.1.1
+          ip=9.9.7.7
           op monitor interval=10s
       register: resultobj
     - name: "Ensure cluster resource 1 idempotence: Output"
@@ -41,7 +41,7 @@
         resource_provider: heartbeat
         resource_type: IPaddr2
         options: |
-          ip=1.1.1.2
+          ip=1.0.0.23
           op monitor interval=10s
       register: resultobj
     - name: "Create cluster resource 2: Output"
@@ -56,7 +56,7 @@
         resource_provider: heartbeat
         resource_type: IPaddr2
         options: |
-          ip=1.1.1.3
+          ip=3.23.13.3
           op monitor interval=10s
       register: resultobj
     - name: "Create cluster resource 3: Output"
@@ -100,7 +100,7 @@
         resource_provider: heartbeat
         resource_type: IPaddr2
         options: |
-          ip=1.1.1.1
+          ip=9.9.7.7
           op monitor interval=10s
       register: resultobj
     - name: "Ensure cluster resource 1 idempotence after adding to group: Output"
