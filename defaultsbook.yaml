@@ -11,7 +11,7 @@
         defaults_type: "{{ item.dtype }}"
       loop:
         - { name: 'resource-stickiness', dtype: 'rsc'}
-        - { name: 'migration-threshold' }
+        - { name: 'migration-threshold', dtype: 'rsc' }
         - { name: 'record-pending', dtype: 'op' }
       register: resultobj
     - name: "Ensure cluster defaults are unset: Output"
@@ -25,7 +25,7 @@
         defaults_type: "{{ item.dtype }}"
       loop:
         - { name: 'resource-stickiness', dtype: 'rsc'}
-        - { name: 'migration-threshold' }
+        - { name: 'migration-threshold', dtype: 'rsc' }
         - { name: 'record-pending', dtype: 'op' }
       register: resultobj
     - name: "Ensure unset idempotence: Output"
@@ -70,7 +70,7 @@
         defaults_type: "{{ item.dtype }}"
       loop:
         - { name: 'resource-stickiness', dtype: 'rsc', value: '1000' }
-        - { name: 'migration-threshold', value: '5000' }
+        - { name: 'migration-threshold', dtype: 'rsc', value: '5000' }
         - { name: 'record-pending', dtype: 'op', value: true }
       register: resultobj
     - name: "Modify cluster defaults: Output"
