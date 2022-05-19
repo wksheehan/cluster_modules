@@ -24,8 +24,8 @@ options:
             - "present" ensures the property is set
             - "absent" ensures the property is unset
         required: false
+        choices: ["present", "absent"]
         default: present
-        choices: ['present', 'absent']
         type: str
     node:
         description:
@@ -67,7 +67,7 @@ def run_module():
     # ==== SETUP ====
     
     module_args = dict(
-        state=dict(required=False, default="present", choices=['present', 'absent']),
+        state=dict(required=False, default="present", choices=["present", "absent"]),
         node=dict(required=False),
         name=dict(required=True),
         value=dict(required=False)
@@ -84,10 +84,10 @@ def run_module():
     )
 
     os      = get_os_name(module, result)
-    state   = module.params['state']
-    node    = module.params['node']
-    name    = module.params['name']
-    value   = module.params['value']
+    state   = module.params["state"]
+    node    = module.params["node"]
+    name    = module.params["name"]
+    value   = module.params["value"]
     ctype   = "property" if node is None else "attribute"
 
 
@@ -128,7 +128,7 @@ def run_module():
 
     # ==== INITIAL CHECKS ====
 
-    if os == "RedHat" and find_executable('pcs') is None:
+    if os == "RedHat" and find_executable("pcs") is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     if state == "present" and value is None:
         module.fail_json(msg="value parameter must be supplied when state is present")

@@ -19,11 +19,11 @@ description: authenticates the user on one or more nodes to be used in a cluster
 options:
     state:
         description:
-            - present will ensure the nodes are authenticated
-            - absent will ensure the nodes are deauthenticated
+            - "present" ensures the nodes are authenticated
+            - "absent" ensures the nodes are deauthenticated
         required: false
-        choices: ['present', 'absent']
-        default: 'present'
+        choices: ["present", "absent"]
+        default: "present"
         type: str
     nodes:
         description:
@@ -40,7 +40,8 @@ options:
     password:
         description:
             - the password of the cluster administrator
-        required: true
+            - required when state is present
+        required: false
         type: str
 
 author:
@@ -64,10 +65,10 @@ def run_module():
     # ==== SETUP ====
 
     module_args = dict(
+        state=dict(required=False, default="present", choices=["present", "absent"]),
         nodes=dict(required=True),
-        state=dict(required=True, default="present"),
         username=dict(required=False, default="hacluster"),
-        password=dict(required=True, no_log=True)
+        password=dict(required=False, no_log=True)
     )
 
     module = AnsibleModule(
@@ -82,16 +83,18 @@ def run_module():
 
     os          = get_os_name(module, result)
     version     = get_os_version(module, result)
-    state       = module.params['state']
-    nodes       = module.params['nodes']
-    username    = module.params['username']
-    password    = module.params['password']
+    state       = module.params["state"]
+    nodes       = module.params["nodes"]
+    username    = module.params["username"]
+    password    = module.params["password"]
 
 
     # ==== INITIAL CHECKS ====
     
-    if find_executable('pcs') is None:
+    if find_executable("pcs") is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
+    if state == "present" and password is None:
+        module.fail_json(msg="Must specify password when state is present", **result)
     
 
     # ==== COMMAND DICTIONARY ==== 
@@ -106,7 +109,7 @@ def run_module():
     commands["RedHat"]["7"]["deauthenticate"]       = "pcs cluster deauth %s" % nodes
     commands["RedHat"]["8"]["deauthenticate"]       = "pcs host deauth %s" % nodes
     
-    
+
     # ==== MAIN CODE ====
 
     rc, out, err = module.run_command(commands[os]["status"])

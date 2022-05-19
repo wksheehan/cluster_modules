@@ -24,8 +24,8 @@ options:
             - "present" ensures the default value is set
             - "absent" ensures a default value has not been set
         required: false
+        choices: ["present", "absent"]
         default: present
-        choices: ['present', 'absent']
         type: str
     name:
         description:
@@ -40,11 +40,11 @@ options:
         type: str
     defaults_type:
         description:
-            - 'rsc' specifies managing resource defaults
-            - 'op' specifies managing operation defaults
+            - "rsc" specifies managing resource defaults
+            - "op" specifies managing operation defaults
         required: false
-        default: 'rsc'
-        choices: ['rsc', 'op']
+        choices: ["rsc", "op"]
+        default: "rsc"
         type: str
 author:
     - William Sheehan (@wksheehan)
@@ -69,11 +69,11 @@ def run_module():
     # ==== SETUP ====
     
     module_args = dict(
-        state=dict(required=False, default="present", choices=['present', 'absent']),
+        state=dict(required=False, default="present", choices=["present", "absent"]),
         node=dict(required=False),
         name=dict(required=True),
         value=dict(required=False),
-        defaults_type=dict(required=False, default="rsc", choices=['rsc', 'op'])
+        defaults_type=dict(required=False, default="rsc", choices=["rsc", "op"])
     )
 
     module = AnsibleModule(
@@ -87,10 +87,10 @@ def run_module():
     )
 
     os      = get_os_name(module, result)
-    state   = module.params['state']
-    name    = module.params['name']
-    value   = module.params['value']
-    dtype   = module.params['defaults_type']
+    state   = module.params["state"]
+    name    = module.params["name"]
+    value   = module.params["value"]
+    dtype   = module.params["defaults_type"]
 
 
     # ==== COMMAND DICTIONARY ====
@@ -124,7 +124,7 @@ def run_module():
 
     # ==== INITIAL CHECKS ====
 
-    if os == "RedHat" and find_executable('pcs') is None:
+    if os == "RedHat" and find_executable("pcs") is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     if state == "present" and value is None:
         module.fail_json(msg="value parameter must be supplied when state is present")

@@ -24,14 +24,14 @@ options:
             - "present" ensures the colocation constraint exists
             - "absent" ensures the colocation contraint does not exist
         required: false
+        choices: ["present", "absent"]
         default: present
-        choices: ['present', 'absent']
         type: str
     name:
         description:
             - the id of the order constraint
         required: false
-        default: 'order-{first_action}-{first_resource}-{second_action}-{second_resource}-{kind}-{symmetrical}'
+        default: "order-{first_action}-{first_resource}-{second_action}-{second_resource}-{kind}-{symmetrical}"
         type: str
     first_resource:
         description:
@@ -47,36 +47,42 @@ options:
         description:
             - the action to perform on first_resource
         required: false
-        choices: ['start','promote','demote','stop']
-        default: 'start'
+        choices: ["start","promote","demote","stop"]
+        default: "start"
         type: str
     second_action:
         description:
             - the action to perform on second_resource
         required: false
-        choices: ['start', 'stop', 'promote','demote']
-        default: 'start'
+        choices: ["start", "stop", "promote","demote"]
+        default: "start"
         type: str
     kind:
         description:
             - how to enforce the ordering constraint
         required: false
-        choices: ['Optional', 'Mandatory', 'Serialize']
-        default: 'Mandatory'
+        choices: ["Optional", "Mandatory", "Serialize"]
+        default: "Mandatory"
         type: str
     symmetrical:
         description:
             - if true, stops the resources in reverse order
         required: false
-        choices: ['true','false']
-        default: 'true'
+        choices: ["true","false"]
+        default: "true"
         type: str
 author:
     - William Sheehan (@wksheehan)
 '''
 
 EXAMPLES = r'''
-
+- name: "Create order constraint rsc1 then rsc2, Optional and not symmetrical"
+    cluster_order:
+    state: present
+    first_resource: "rsc2"
+    second_resource: "rsc2"
+    kind: Optional
+    symmetrical: "false"
 '''
 
 from ansible.module_utils.basic import AnsibleModule
@@ -90,14 +96,14 @@ def run_module():
     # ==== SETUP ====
     
     module_args = dict(
-        state=dict(required=False, choices=["present", "absent"], default="present"),
+        state=dict(required=False, default="present", choices=["present", "absent"]),
         name=dict(required=False),
         first_resource=dict(required=True),
         second_resource=dict(required=True),
-        first_action=dict(required=False, choices=['start', 'stop', 'promote', 'demote'], default='start'),
-        second_action=dict(required=False, choices=['start', 'stop', 'promote', 'demote'], default='start'),
-        kind=dict(required=False, choices=['Optional', 'Mandatory', 'Serialize'], default='Mandatory'),
-        symmetrical=dict(required=False, choices=['true', 'false'], default='true')
+        first_action=dict(required=False, choices=["start", "stop", "promote", "demote"], default="start"),
+        second_action=dict(required=False, choices=["start", "stop", "promote", "demote"], default="start"),
+        kind=dict(required=False, choices=["Optional", "Mandatory", "Serialize"], default="Mandatory"),
+        symmetrical=dict(required=False, choices=["true", "false"], default="true")
     )
 
     module = AnsibleModule(
@@ -112,14 +118,14 @@ def run_module():
 
     os                  = get_os_name(module, result)
     version             = get_os_version(module, result)
-    state               = module.params['state']
-    name                = module.params['name']
-    first_resource      = module.params['first_resource']
-    second_resource     = module.params['second_resource']
-    first_action        = module.params['first_action']
-    second_action       = module.params['second_action']
-    kind                = module.params['kind']
-    symmetrical         = module.params['symmetrical']
+    state               = module.params["state"]
+    name                = module.params["name"]
+    first_resource      = module.params["first_resource"]
+    second_resource     = module.params["second_resource"]
+    first_action        = module.params["first_action"]
+    second_action       = module.params["second_action"]
+    kind                = module.params["kind"]
+    symmetrical         = module.params["symmetrical"]
     
     if os == "Suse":
         version = "all"
@@ -147,7 +153,7 @@ def run_module():
 
     # ==== INITIAL CHECKS ====
 
-    if os == "RedHat" and find_executable('pcs') is None:
+    if os == "RedHat" and find_executable("pcs") is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     # Make sure we can communicate with the cluster
     rc, out, err = module.run_command(commands[os]["status"])

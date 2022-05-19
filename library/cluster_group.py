@@ -21,11 +21,11 @@ description:
 options:
     state:
         description:
-            - 'present' ensures the resource group is exists
-            - 'absent' ensures the resource group doesn't exist
+            - "present" ensures the resource group is exists
+            - "absent" ensures the resource group doesn't exist
         required: false
+        choices: ["present", "absent"]
         default: present
-        choices: ['present', 'absent']
         type: str
     name:
         description:
@@ -63,10 +63,6 @@ EXAMPLES = r'''
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.helper_functions import get_os_name, execute_command
 from distutils.spawn import find_executable
-import xml.etree.ElementTree as ET
-import uuid
-import os as OS
-import tempfile
 
 
 def run_module():
@@ -74,7 +70,7 @@ def run_module():
     # ==== Setup ====
     
     module_args = dict(
-        state=dict(required=False, default="present", choices=['present', 'absent']),
+        state=dict(required=False, default="present", choices=["present", "absent"]),
         name=dict(required=True),
         resources=dict(required=False, default=""),
         options=dict(required=False, default="")
@@ -91,10 +87,10 @@ def run_module():
     )
 
     os                  = get_os_name(module, result)
-    state               = module.params['state']
-    name                = module.params['name']
-    resources           = module.params['resources']
-    options             = module.params['options']
+    state               = module.params["state"]
+    name                = module.params["name"]
+    resources           = module.params["resources"]
+    options             = module.params["options"]
 
     resource_list       = resources.split()
     resource_set        = set(resource_list)
@@ -126,10 +122,10 @@ def run_module():
 
     # ==== Initial checks ====
 
-    if os == "RedHat" and find_executable('pcs') is None:
+    if os == "RedHat" and find_executable("pcs") is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     if state == "present" and (resources is None or len(resource_set) == 0):
-        module.fail_json(msg='No resources specified. If you wish to destroy the resource group, run again with state = absent' **result)
+        module.fail_json(msg="No resources specified. If you wish to destroy the resource group, run again with state = absent", **result)
     rc, out, err = module.run_command(commands[os]["status"])
     if rc != 0:
         module.fail_json(msg="Cluster is not running on current node!", **result)

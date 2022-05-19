@@ -23,11 +23,11 @@ description:
 options:
     state:
         description:
-            - 'present' will create or modify the cluster
-            - 'absent' will remove the entire cluster
+            - "present" will create or modify the cluster
+            - "absent" will remove the entire cluster
         required: false
-        default: 'present'
-        choices: ['present', 'absent']
+        choices: ["present", "absent"]
+        default: "present"
         type: str
     sid:
         description:
@@ -103,11 +103,11 @@ def run_module():
     # ==== SETUP ==== 
 
     module_args = dict(
-        state=dict(required=True, choices=['present','absent']),
+        state=dict(required=False, default="present", choices=["present", "absent"]),
         sid=dict(required=False),
         existing_node=dict(required=False),
         nodes=dict(required=False, default=""),
-        tier=dict(required=False, choices=['hana', 'scs', 'db2']),
+        tier=dict(required=False, choices=["hana", "scs", "db2"]),
         token=dict(required=False)
     )
 
@@ -123,15 +123,15 @@ def run_module():
 
     os              = get_os_name(module, result)
     version         = get_os_version(module, result)
-    state           = module.params['state']
-    sid             = module.params['sid']
-    existing_node   = module.params['existing_node']
-    nodes           = module.params['nodes']
+    state           = module.params["state"]
+    sid             = module.params["sid"]
+    existing_node   = module.params["existing_node"]
+    nodes           = module.params["nodes"]
     nodes_set       = set(nodes.split())
-    tier            = module.params['tier']
-    token           = module.params['token']
+    tier            = module.params["tier"]
+    token           = module.params["token"]
     curr_node       = socket.gethostname()
-    cluster_exists  = OS.path.isfile('/etc/corosync/corosync.conf') or OS.path.isfile('/var/lib/pacemaker/cib/cib.xml')
+    cluster_exists  = OS.path.isfile("/etc/corosync/corosync.conf") or OS.path.isfile("/var/lib/pacemaker/cib/cib.xml")
 
     # Generate the desired cluster name
     if os == "Suse":
@@ -144,10 +144,8 @@ def run_module():
     # ==== INITIAL CHECKS ====
 
     if os == "RedHat":
-        if find_executable('pcs') is None:
+        if find_executable("pcs") is None:
             module.fail_json(msg="'pcs' executable not found. Install 'pcs'.", **result)
-        if version is None:
-            module.fail_json(msg="OS version must be specified when using RedHat", **result)
         if existing_node is not None and curr_node != existing_node:
             module.fail_json(msg="Must configure the cluster from the current node when using RedHat", **result)
     if os == "Suse":

@@ -21,11 +21,11 @@ description:
 options:
     state:
         description:
-            - 'present' ensures the resource is exists
-            - 'absent' ensures the resource doesn't exist
+            - "present" ensures the resource is exists
+            - "absent" ensures the resource doesn't exist
         required: false
+        choices: ["present", "absent"]
         default: present
-        choices: ['present', 'absent']
         type: str
     clone_name:
         description:
@@ -95,11 +95,11 @@ def run_module():
     )
 
     os                  = get_os_name(module, result)
-    state               = module.params['state']
-    clone_name          = module.params['clone_name']
-    resource_name       = module.params['resource_name']
-    clone_type          = module.params['clone_type']
-    options             = module.params['options']
+    state               = module.params["state"]
+    clone_name          = module.params["clone_name"]
+    resource_name       = module.params["resource_name"]
+    clone_type          = module.params["clone_type"]
+    options             = module.params["options"]
 
     curr_cib_path       = "/var/lib/pacemaker/cib/cib.xml"
     new_cib_name        = "shadow-cib" + str(uuid.uuid4())
@@ -144,7 +144,7 @@ def run_module():
 
     # ==== Initial checks ====
 
-    if os == "RedHat" and find_executable('pcs') is None:
+    if os == "RedHat" and find_executable("pcs") is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     rc, out, err = module.run_command(commands[os]["status"])
     if rc != 0:

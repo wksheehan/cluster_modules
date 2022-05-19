@@ -15,17 +15,17 @@ short_description: configures a cluster resource
 version_added: "1.0"
 
 description: 
-    - configures a cluster resource
+    - creates, modifies, or deletes a cluster resource
     - for RHEL or SUSE operating systems 
 
 options:
     state:
         description:
-            - 'present' ensures the resource is exists
-            - 'absent' ensures the resource doesn't exist
+            - "present" ensures the resource is exists
+            - "absent" ensures the resource doesn't exist
         required: false
+        choices: ["present", "absent"]
         default: present
-        choices: ['present', 'absent']
         type: str
     name:
         description:
@@ -38,20 +38,20 @@ options:
     resource_class:
         description:
             - the class of resource to configure
-        choices: ['stonith', 'ocf',...]
         required: false
+        choices: ["stonith", "ocf",...]
         type: str
     resource_provider:
         description:
             - the provider of resource to configure
-        choices: ['heartbeat',...]
         required: false
+        choices: ["heartbeat",...]
         type: str
     resource_type:
         description:
             - the type of resource to configure (the resource agent)
-        choices: ['azure-events', 'fence_azure_arm', 'IPaddr2',...]
         required: false
+        choices: ["azure-events", "fence_azure_arm", "IPaddr2",...]
         type: str
     options:
         description:
@@ -87,7 +87,7 @@ def run_module():
     # ==== Setup ====
     
     module_args = dict(
-        state=dict(required=False, default="present", choices=['present', 'absent']),
+        state=dict(required=False, default="present", choices=["present", "absent"]),
         name=dict(required=True),
         resource_class=dict(required=False),
         resource_provider=dict(required=False),
@@ -106,12 +106,12 @@ def run_module():
     )
 
     os                  = get_os_name(module, result)
-    state               = module.params['state']
-    name                = module.params['name']
-    resource_class      = module.params['resource_class']
-    resource_provider   = module.params['resource_provider']
-    resource_type       = module.params['resource_type']
-    options             = module.params['options']
+    state               = module.params["state"]
+    name                = module.params["name"]
+    resource_class      = module.params["resource_class"]
+    resource_provider   = module.params["resource_provider"]
+    resource_type       = module.params["resource_type"]
+    options             = module.params["options"]
 
     # Formats the class:provider:type parameter for cluster creation
     def format_class_provider_type():
@@ -161,10 +161,10 @@ def run_module():
 
     # ==== Initial checks ====
 
-    if os == "RedHat" and find_executable('pcs') is None:
+    if os == "RedHat" and find_executable("pcs") is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     if state == "present" and resource_type is None:
-        module.fail_json(msg='Must specify resource_type when state is present' **result)
+        module.fail_json(msg="Must specify resource_type when state is present", **result)
     rc, out, err = module.run_command(commands[os]["status"])
     if rc != 0:
         module.fail_json(msg="Cluster is not running on current node!", **result)

@@ -24,14 +24,14 @@ options:
             - "present" ensures the colocation constraint exists
             - "absent" ensures the colocation contraint does not exist
         required: false
+        choices: ["present", "absent"]
         default: present
-        choices: ['present', 'absent']
         type: str
     name:
         description:
             - the id of the colocation constraint
         required: false
-        default: 'colocation-{source_role}-{source_resource}-{target_role}-{target_resource}-{score}'
+        default: "colocation-{source_role}-{source_resource}-{target_role}-{target_resource}-{score}"
         type: str
     source_resource:
         description:
@@ -41,43 +41,45 @@ options:
         type: str
     target_resource:
         description:
-            - the colocation target, or 'with resource'
+            - the colocation target, or "with resource"
             - the cluster will decide where to put this resource first and then decide where to put the source resource
         required: true
         type: str
     source_role:
         description:
             - the role of the source resource
-        choices: ['Master', 'Slave', 'Started', 'Stopped']
         required: false
+        choices: ["Master", "Slave", "Started", "Stopped"]
+        default: "Started"
         type: str
     target_role:
         description:
             - the role of the target resource
-        choices: ['Master', 'Slave', 'Started', 'Stopped']
         required: false
+        choices: ["Master", "Slave", "Started", "Stopped"]
+        default: "Started"
         type: str
     score:
         description:
             - the constraint score
             - positive values indicate the resource should run on the same node
             - negative values indicate the resources should not run on the same node
-            - 'INFINITY' indicates that the source_resource must run on the same node as the target_resource
-            - '-INFINITY' indicates that the source_resource must not run on the same node as the target_resource
+            - "INFINITY" indicates that the source_resource must run on the same node as the target_resource
+            - "-INFINITY" indicates that the source_resource must not run on the same node as the target_resource
         required: false
-        default: 'INFINITY'
+        default: "INFINITY"
         type: str
 author:
     - William Sheehan (@wksheehan)
 '''
 
 EXAMPLES = r'''
-- name: colocate resource1 with master role of resource2 (resource2-master) with a score of 4000
+- name: colocate resource1 with master role of resource2 with a score of 4000
   cluster_colocation:
     state: present
-    source_resource: 'resource1'
-    target_resource: 'resource2-master'
-    target_role: 'master'
+    source_resource: resource1
+    target_resource: resource2-master
+    target_role: master
     score: 4000
 '''
 
@@ -113,13 +115,13 @@ def run_module():
 
     os                  = get_os_name(module, result)
     version             = get_os_version(module, result)
-    state               = module.params['state']
-    name                = module.params['name']
-    source_resource     = module.params['source_resource']
-    target_resource     = module.params['target_resource']
-    source_role         = module.params['source_role']
-    target_role         = module.params['target_role']
-    score               = module.params['score']    
+    state               = module.params["state"]
+    name                = module.params["name"]
+    source_resource     = module.params["source_resource"]
+    target_resource     = module.params["target_resource"]
+    source_role         = module.params["source_role"]
+    target_role         = module.params["target_role"]
+    score               = module.params["score"]    
     
     if os == "Suse":
         version = "all"
@@ -147,7 +149,7 @@ def run_module():
 
     # ==== INITIAL CHECKS ====
 
-    if os == "RedHat" and find_executable('pcs') is None:
+    if os == "RedHat" and find_executable("pcs") is None:
         module.fail_json(msg="'pcs' executable not found. Install 'pcs'.")
     # Make sure we can communicate with the cluster
     rc, out, err = module.run_command(commands[os]["status"])
