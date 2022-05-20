@@ -1,0 +1,11 @@
+- name: "Test all the modules"
+  import_tasks: "{{ item }}"
+  loop:
+  - "initbook.yaml"
+  - "propertybook.yaml"
+  - "resourcebook.yaml"
+  - "clonebook.yaml"
+  - "groupbook.yaml"
+  - "orderbook.yaml"
+  - "colocationbook.yaml"
+  - "defaultsbook.yaml"
