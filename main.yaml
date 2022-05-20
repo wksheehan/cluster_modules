@@ -1,11 +1,29 @@
-- name: "Test all the modules"
-  import_tasks: "{{ item }}"
-  loop:
-  - "initbook.yaml"
-  - "propertybook.yaml"
-  - "resourcebook.yaml"
-  - "clonebook.yaml"
-  - "groupbook.yaml"
-  - "orderbook.yaml"
-  - "colocationbook.yaml"
-  - "defaultsbook.yaml"
+- name: "Import "
+  import_playbook: "initbook.yaml"
+  
+- name: "Import propertybook"
+  import_playbook: "propertybook.yaml"
+  
+- name: "Import resourcebook"
+  import_playbook: "resourcebook.yaml"
+  
+- name: "Import clonebook"
+  import_playbook: "clonebook.yaml"
+  
+- name: "Import groupbook"
+  import_playbook: "groupbook.yaml"
+  
+- name: "Import orderbook"
+  import_playbook: "orderbook.yaml"
+  
+- name: "Import colocationbook"
+  import_playbook: "colocationbook.yaml"
+  
+- name: "Import defaultsbook"
+  import_playbook: "defaultsbook.yaml"
+
+
+
+
+
+
