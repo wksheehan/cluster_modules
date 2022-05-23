@@ -64,7 +64,8 @@ def run_module():
     version             = get_os_version(module, result)
     online              = module.params["online"]
     node                = module.params["node"]
-    
+    if os == "Suse":
+        version = "all"
 
 
     # ==== COMMAND DICTIONARY ====
