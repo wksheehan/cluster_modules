@@ -19,7 +19,7 @@
     - name: "Ensure nodes on standby"
       node_online:
         online: "false"
-        node: "{{ item.name }}"
+        node: "{{item.name}}"
       loop:
         - { name: "{{node1}}" }
         - { name: "{{node2}}" }
@@ -32,7 +32,7 @@
     - name: "Ensure nodes on standby idempotence"
       node_online:
         online: "false"
-        node: "{{ item.name }}"
+        node: "{{item.name}}"
       loop:
         - { name: "{{node1}}" }
         - { name: "{{node2}}" }
@@ -45,7 +45,7 @@
     - name: "Bring nodes online"
       node_online:
         online: "true"
-        node: "{{ item.name }}"
+        node: "{{item.name}}"
       loop:
         - { name: "{{node1}}" }
         - { name: "{{node2}}" }
@@ -58,7 +58,7 @@
     - name: "Bring nodes online idempotence"
       node_online:
         online: "true"
-        node: "{{ item.name }}"
+        node: "{{item.name}}"
       loop:
         - { name: "{{node1}}" }
         - { name: "{{node2}}" }
