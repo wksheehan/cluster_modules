@@ -49,6 +49,7 @@ options:
         description:
             - optional id for an attribute list the parameter and value will be added to
             - other resources can reuse this attribute list by referring to this name using $id-ref
+            - only for use with Suse operating systems
         required: false
         default: cib-bootstrap-options
         type: str
