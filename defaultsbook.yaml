@@ -76,3 +76,81 @@
     - name: "Modify cluster defaults: Output"
       debug:
         msg: '{{ resultobj }}'
+    
+    - name: "Attribute list: Ensure cluster defaults are unset"
+      cluster_defaults:
+        state: absent
+        name: "{{ item.name }}"
+        defaults_type: "{{ item.dtype }}"
+        set_name: "{{ item.setname }}"
+      loop:
+        - { name: 'resource-stickiness', dtype: 'rsc', setname: "myrscset" }
+        - { name: 'migration-threshold', dtype: 'rsc', setname: "myrscset" }
+        - { name: 'record-pending', dtype: 'op', setname: "myopset" }
+      register: resultobj
+    - name: "Attribute list: Ensure cluster defaults are unset: Output"
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Attribute list: Ensure unset idempotence"
+      cluster_defaults:
+        state: absent
+        name: "{{ item.name }}"
+        defaults_type: "{{ item.dtype }}"
+        set_name: "{{ item.setname }}"
+      loop:
+        - { name: 'resource-stickiness', dtype: 'rsc', setname: "myrscset" }
+        - { name: 'migration-threshold', dtype: 'rsc', setname: "myrscset" }
+        - { name: 'record-pending', dtype: 'op', setname: "myopset" }
+      register: resultobj
+    - name: "Attribute list: Ensure unset idempotence: Output"
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Attribute list: Set cluster defaults"
+      cluster_defaults:
+        state: present
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        defaults_type: "{{ item.dtype }}"
+        set_name: "{{ item.setname }}"
+      loop:
+        - { name: 'resource-stickiness', dtype: 'rsc', value: '1099', setname: "myrscset" }
+        - { name: 'migration-threshold', dtype: 'rsc', value: '5099', setname: "myrscset" }
+        - { name: 'record-pending', dtype: 'op', value: "false", setname: "myopset" }
+      register: resultobj
+    - name: "Attribute list: Set cluster defaults: Output"
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Attribute list: Ensure idempotence"
+      cluster_defaults:
+        state: present
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        defaults_type: "{{ item.dtype }}"
+        set_name: "{{ item.setname }}"
+      loop:
+        - { name: 'resource-stickiness', dtype: 'rsc', value: '1099', setname: "myrscset" }
+        - { name: 'migration-threshold', dtype: 'rsc', value: '5099', setname: "myrscset" }
+        - { name: 'record-pending', dtype: 'op', value: "false", setname: "myopset" }
+      register: resultobj
+    - name: "Attribute list: Ensure idempotence: Output"
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Attribute list: Modify cluster defaults"
+      cluster_defaults:
+        state: present
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        defaults_type: "{{ item.dtype }}"
+        set_name: "{{ item.setname }}"
+      loop:
+        - { name: 'resource-stickiness', dtype: 'rsc', value: '1000', setname: "myrscset" }
+        - { name: 'migration-threshold', dtype: 'rsc', value: '5000', setname: "myrscset" }
+        - { name: 'record-pending', dtype: 'op', value: "true", setname: "myopset" }
+      register: resultobj
+    - name: "Attribute list: Modify cluster defaults: Output"
+      debug:
+        msg: '{{ resultobj }}'

@@ -106,6 +106,7 @@
         state: present
         name: "{{ item.name }}"
         value: "{{ item.value }}"
+        set_name: mycoolset
       loop:
         - { name: 'no-quorum-policy', value: "ignore" }
         - { name: 'concurrent-fencing', value: "true" }
@@ -120,6 +121,7 @@
         state: present
         name: "{{ item.name }}"
         value: "{{ item.value }}"
+        set_name: mycoolset
       loop:
         - { name: 'no-quorum-policy', value: "stop" }
         - { name: 'concurrent-fencing', value: "false" }

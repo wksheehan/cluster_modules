@@ -46,6 +46,13 @@ options:
         choices: ["rsc", "op"]
         default: "rsc"
         type: str
+    set_name:
+        description:
+            - optional id for an attribute list the parameter and value will be added to
+            - other resources can reuse this attribute list by referring to this name using $id-ref
+        required: false
+        default: {dtype}-options
+        type: str
 author:
     - William Sheehan (@wksheehan)
 '''
@@ -73,7 +80,8 @@ def run_module():
         node=dict(required=False),
         name=dict(required=True),
         value=dict(required=False),
-        defaults_type=dict(required=False, default="rsc", choices=["rsc", "op"])
+        defaults_type=dict(required=False, default="rsc", choices=["rsc", "op"]),
+        set_name=dict(required=False)
     )
 
     module = AnsibleModule(
@@ -86,11 +94,15 @@ def run_module():
         message=""
     )
 
-    os      = get_os_name(module, result)
-    state   = module.params["state"]
-    name    = module.params["name"]
-    value   = module.params["value"]
-    dtype   = module.params["defaults_type"]
+    os          = get_os_name(module, result)
+    state       = module.params["state"]
+    name        = module.params["name"]
+    value       = module.params["value"]
+    dtype       = module.params["defaults_type"]
+    set_name    = module.params["set_name"]
+    
+    if set_name is None:
+        set_name = dtype + "-options"
 
 
     # ==== COMMAND DICTIONARY ====
@@ -105,21 +117,21 @@ def run_module():
     commands["RedHat"]["op"]                        = {}
     commands["Suse"  ]["op"]                        = {}
     commands["RedHat"]["rsc"]["set"]                = f"pcs resource defaults {name}={value}"
-    commands["Suse"  ]["rsc"]["set"]                = f"crm configure rsc_defaults {name}={value}"
+    commands["Suse"  ]["rsc"]["set"]                = f"crm configure rsc_defaults \$id={set_name} {name}={value}"
     commands["RedHat"]["op" ]["set"]                = f"pcs resource op defaults {name}={value}"
-    commands["Suse"  ]["op" ]["set"]                = f"crm configure op_defaults {name}={value}"
+    commands["Suse"  ]["op" ]["set"]                = f"crm configure op_defaults \$id={set_name} {name}={value}"
     commands["RedHat"]["rsc"]["unset"]              = f"pcs resource defaults {name}="
-    commands["Suse"  ]["rsc"]["unset"]              = f"crm_attribute --type rsc_defaults --name {name} --delete"
+    commands["Suse"  ]["rsc"]["unset"]              = f"crm_attribute --type rsc_defaults --set-name {set_name} --name {name} --delete"
     commands["RedHat"]["op" ]["unset"]              = f"pcs resource op defaults {name}="
-    commands["Suse"  ]["op" ]["unset"]              = f"crm_attribute --type op_defaults --name {name} --delete"
+    commands["Suse"  ]["op" ]["unset"]              = f"crm_attribute --type op_defaults --set-name {set_name} --name {name} --delete"
     commands["RedHat"]["rsc"]["get"]                = "pcs resource defaults | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'"  % name
-    commands["Suse"  ]["rsc"]["get"]                = f"crm_attribute --type rsc_defaults --name {name} --query --quiet | tr -d '[:space:]'"
+    commands["Suse"  ]["rsc"]["get"]                = f"crm_attribute --type rsc_defaults --set-name {set_name} --name {name} --query --quiet | tr -d '[:space:]'"
     commands["RedHat"]["op" ]["get"]                = "pcs resource op defaults | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'"  % name
-    commands["Suse"  ]["op" ]["get"]                = f"crm_attribute --type op_defaults --name {name} --query --quiet | tr -d '[:space:]'"
+    commands["Suse"  ]["op" ]["get"]                = f"crm_attribute --type op_defaults --set-name {set_name} --name {name} --query --quiet | tr -d '[:space:]'"
     commands["RedHat"]["rsc"]["check"]              = f"pcs resource defaults | grep {name}"
-    commands["Suse"  ]["rsc"]["check"]              = f"crm_attribute --type rsc_defaults --name {name} --query"
+    commands["Suse"  ]["rsc"]["check"]              = f"crm_attribute --type rsc_defaults --set-name {set_name} --name {name} --query"
     commands["RedHat"]["op" ]["check"]              = f"pcs resource op defaults | grep {name}"
-    commands["Suse"  ]["op" ]["check"]              = f"crm_attribute --type op_defaults --name {name} --query"
+    commands["Suse"  ]["op" ]["check"]              = f"crm_attribute --type op_defaults --set-name {set_name} --name {name} --query"
 
 
     # ==== INITIAL CHECKS ====
