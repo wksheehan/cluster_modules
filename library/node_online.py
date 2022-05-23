@@ -104,8 +104,6 @@ def run_module():
     # Checks if a node is online or not
     def node_online():
         rc, out, err = module.run_command(commands[os][version]["status"], use_unsafe_shell=True)
-        result["cmd_node_online_rc"] = rc
-        result["cmd_node_online_out"] = out
         return rc != 0
 
     def bring_node_online():
