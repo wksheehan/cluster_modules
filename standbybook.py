@@ -17,7 +17,7 @@
       when: ansible_os_family == "Suse"
 
     - name: "Ensure nodes on standby"
-      cluster_standby:
+      node_online:
         online: "false"
         node: "{{ item.name }}"
         loop:
@@ -30,7 +30,7 @@
         msg: '{{ resultobj }}'
     
     - name: "Ensure nodes on standby idempotence"
-      cluster_standby:
+      node_online:
         online: "false"
         node: "{{ item.name }}"
         loop:
@@ -43,7 +43,7 @@
         msg: '{{ resultobj }}'
     
     - name: "Bring nodes online"
-      cluster_standby:
+      node_online:
         online: "true"
         node: "{{ item.name }}"
         loop:
@@ -56,7 +56,7 @@
         msg: '{{ resultobj }}'
    
     - name: "Bring nodes online idempotence"
-      cluster_standby:
+      node_online:
         online: "true"
         node: "{{ item.name }}"
         loop:
