@@ -71,3 +71,60 @@
     - name: "Modify cluster properties: Output"
       debug:
         msg: '{{ resultobj }}'
+    
+    - name: "Attribute list: ensure cluster properties are not set"
+      cluster_property:
+        state: absent
+        name: "{{ item.name }}"
+        set_name: mycoolset
+      loop:
+        - { name: 'no-quorum-policy' }
+        - { name: 'concurrent-fencing' }
+        - { name: 'stonith-timeout' }
+      register: resultobj
+    - name: "Attribute list: ensure cluster properties are not set: Output"
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "Attribute list: set cluster properties"
+      cluster_property:
+        state: present
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        set_name: mycoolset
+      loop:
+        - { name: 'no-quorum-policy', value: "ignore" }
+        - { name: 'concurrent-fencing', value: "true" }
+        - { name: 'stonith-timeout', value: '909090' }
+      register: resultobj
+    - name: "Attribute list: set cluster properties: Output"
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Attribute list: Ensure idempotence"
+      cluster_property:
+        state: present
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+      loop:
+        - { name: 'no-quorum-policy', value: "ignore" }
+        - { name: 'concurrent-fencing', value: "true" }
+        - { name: 'stonith-timeout', value: '909090' }
+      register: resultobj
+    - name: "Attribute list: Ensure idempotence: Output"
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Attribute list: modify cluster properties"
+      cluster_property:
+        state: present
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+      loop:
+        - { name: 'no-quorum-policy', value: "stop" }
+        - { name: 'concurrent-fencing', value: "false" }
+        - { name: 'stonith-timeout', value: '4040' }
+      register: resultobj
+    - name: "Attribute list: Modify cluster properties: Output"
+      debug:
+        msg: '{{ resultobj }}'

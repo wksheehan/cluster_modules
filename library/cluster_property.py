@@ -45,6 +45,13 @@ options:
             - not needed when unsetting (state=absent)
         required: false
         type: str
+    set_name:
+        description:
+            - optional id for an attribute list the parameter and value will be added to
+            - other resources can reuse this attribute list by referring to this name using $id-ref
+        required: false
+        default: cib-bootstrap-options
+        type: str
 author:
     - William Sheehan (@wksheehan)
 '''
@@ -70,7 +77,8 @@ def run_module():
         state=dict(required=False, default="present", choices=["present", "absent"]),
         node=dict(required=False),
         name=dict(required=True),
-        value=dict(required=False)
+        value=dict(required=False),
+        set_name=dict(required=False, default="cib-bootstrap-options")
     )
 
     module = AnsibleModule(
@@ -83,12 +91,13 @@ def run_module():
         message=""
     )
 
-    os      = get_os_name(module, result)
-    state   = module.params["state"]
-    node    = module.params["node"]
-    name    = module.params["name"]
-    value   = module.params["value"]
-    ctype   = "property" if node is None else "attribute"
+    os          = get_os_name(module, result)
+    state       = module.params["state"]
+    node        = module.params["node"]
+    name        = module.params["name"]
+    value       = module.params["value"]
+    set_name    = module.params["set_name"]
+    ctype       = "property" if node is None else "attribute"
 
 
     # ==== COMMAND DICTIONARY ====
@@ -101,29 +110,25 @@ def run_module():
     commands["RedHat"]["attribute"]                 = {}
     commands["Suse"  ]["attribute"]                 = {}
     commands["RedHat"]["property" ]["set"]          = "pcs property set %s=%s" % (name, value)
-    commands["Suse"  ]["property" ]["set"]          = "crm configure property %s=%s" % (name, value)
+    commands["Suse"  ]["property" ]["set"]          = "crm configure property \$id=%s %s=%s" % (set_name, name, value)
     commands["RedHat"]["attribute"]["set"]          = "pcs node attribute %s %s=%s" % (node, name, value)
     commands["Suse"  ]["attribute"]["set"]          = "crm node attribute %s set %s %s" % (node, name, value)
     commands["RedHat"]["property" ]["unset"]        = "pcs property unset %s" % name
-    commands["Suse"  ]["property" ]["unset"]        = "crm_attribute --delete --name %s" % name
+    commands["Suse"  ]["property" ]["unset"]        = "crm_attribute --delete --set-name %s --name %s" % (set_name, name)
     commands["RedHat"]["attribute"]["unset"]        = "pcs node attribute %s %s=" % (node, name)
     commands["Suse"  ]["attribute"]["unset"]        = "crm node attribute %s delete %s" % (node, name)
     commands["RedHat"]["property" ]["get"]          = "pcs property list --all | grep %s | awk -F'[:]' '{print $2}' | tr -d '[:space:]'" % name # If the value contains spaces there will be an issue during equality comparison
-    commands["Suse"  ]["property" ]["get"]          = "crm configure get_property %s | tr -d '[:space:]'" % name
+    commands["Suse"  ]["property" ]["get"]          = "crm_attribute --set-name %s --name %s --query --quiet | tr -d '[:space:]'" % (set_name, name)
     commands["RedHat"]["attribute"]["get"]          = "pcs node attribute --name %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (name, node)
     commands["Suse"  ]["attribute"]["get"]          = "crm node show %s | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'" % (node, name)
     commands["RedHat"]["property" ]["check"]        = "pcs property show %s | grep %s" % (name, name)
-    commands["Suse"  ]["property" ]["check"]        = "crm configure show type:property | grep %s=" % name
+    commands["Suse"  ]["property" ]["check"]        = "crm configure show %s | grep %s=" % (set_name, name)
     commands["RedHat"]["attribute"]["check"]        = "pcs node attribute --name %s | grep %s" % (name, node)
     commands["Suse"  ]["attribute"]["check"]        = "crm node attribute %s show %s" % (node, name)
     commands["RedHat"]["property" ]["list"]         = "pcs property list"
     commands["Suse"  ]["property" ]["list"]         = "crm configure show type:property"
     commands["RedHat"]["attribute"]["list"]         = "pcs node attribute"
     commands["Suse"  ]["attribute"]["list"]         = "crm configure show type:node"
-    commands["RedHat"]["property" ]["contains"]     = "%s: %s" % (name, value)
-    commands["Suse"  ]["property" ]["contains"]     = "%s=%s" % (name, value)
-    commands["RedHat"]["attribute"]["contains"]     = "%s=%s" % (name, value)
-    commands["Suse"  ]["attribute"]["contains"]     = "name=%s value=%s" % (name, value)
 
 
     # ==== INITIAL CHECKS ====
