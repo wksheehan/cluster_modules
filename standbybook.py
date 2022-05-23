@@ -20,7 +20,7 @@
       node_online:
         online: "false"
         node: "{{ item.name }}"
-        loop:
+      loop:
         - { name: "{{node1}}" }
         - { name: "{{node2}}" }
       register: resultobj
@@ -33,7 +33,7 @@
       node_online:
         online: "false"
         node: "{{ item.name }}"
-        loop:
+      loop:
         - { name: "{{node1}}" }
         - { name: "{{node2}}" }
       register: resultobj
@@ -46,7 +46,7 @@
       node_online:
         online: "true"
         node: "{{ item.name }}"
-        loop:
+      loop:
         - { name: "{{node1}}" }
         - { name: "{{node2}}" }
       register: resultobj
@@ -59,7 +59,7 @@
       node_online:
         online: "true"
         node: "{{ item.name }}"
-        loop:
+      loop:
         - { name: "{{node1}}" }
         - { name: "{{node2}}" }
       register: resultobj
