@@ -90,7 +90,7 @@ EXAMPLES = r'''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.helper_functions import get_os_name, get_os_version, execute_command
+from ansible.module_utils.helper_functions import get_os_name_and_version, execute_command
 from distutils.spawn import find_executable
 from time import sleep
 import re
@@ -121,8 +121,7 @@ def run_module():
         message=""
     )
 
-    os              = get_os_name(module, result)
-    version         = get_os_version(module, result)
+    os, version     = get_os_name_and_version(module, result)
     state           = module.params["state"]
     sid             = module.params["sid"]
     existing_node   = module.params["existing_node"]
@@ -148,8 +147,6 @@ def run_module():
             module.fail_json(msg="'pcs' executable not found. Install 'pcs'.", **result)
         if existing_node is not None and curr_node != existing_node:
             module.fail_json(msg="Must configure the cluster from the current node when using RedHat", **result)
-    if os == "Suse":
-        version = "all"
     if state == "present" and len(nodes_set) == 0:
         module.fail_json(msg="No nodes will be left in the cluster. If you intend to destroy the whole cluster, re-run the module with state: absent", **result)
 

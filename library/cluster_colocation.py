@@ -84,7 +84,7 @@ EXAMPLES = r'''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.helper_functions import get_os_name, get_os_version, execute_command
+from ansible.module_utils.helper_functions import get_os_name_and_version, execute_command
 from distutils.spawn import find_executable
 import xml.etree.ElementTree as ET
 
@@ -113,8 +113,7 @@ def run_module():
         message=""
     )
 
-    os                  = get_os_name(module, result)
-    version             = get_os_version(module, result)
+    os, version         = get_os_name_and_version(module, result)
     state               = module.params["state"]
     name                = module.params["name"]
     source_resource     = module.params["source_resource"]
@@ -123,8 +122,6 @@ def run_module():
     target_role         = module.params["target_role"]
     score               = module.params["score"]    
     
-    if os == "Suse":
-        version = "all"
     if name is None:
         name = f"colocation-{source_role}-{source_resource}-{target_role}-{target_resource}-{score}"
 

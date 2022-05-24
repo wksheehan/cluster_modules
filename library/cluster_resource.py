@@ -74,7 +74,7 @@ EXAMPLES = r'''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.helper_functions import get_os_name, execute_command
+from ansible.module_utils.helper_functions import get_os_name_and_version, execute_command
 from distutils.spawn import find_executable
 import xml.etree.ElementTree as ET
 import uuid
@@ -105,7 +105,7 @@ def run_module():
         message=""
     )
 
-    os                  = get_os_name(module, result)
+    os, version         = get_os_name_and_version(module, result)
     state               = module.params["state"]
     name                = module.params["name"]
     resource_class      = module.params["resource_class"]

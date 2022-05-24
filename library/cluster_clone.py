@@ -64,7 +64,7 @@ EXAMPLES = r'''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.helper_functions import get_os_name, execute_command
+from ansible.module_utils.helper_functions import get_os_name_and_version, execute_command
 from distutils.spawn import find_executable
 import xml.etree.ElementTree as ET
 import uuid
@@ -94,7 +94,7 @@ def run_module():
         message=""
     )
 
-    os                  = get_os_name(module, result)
+    os, version         = get_os_name_and_version(module, result)
     state               = module.params["state"]
     clone_name          = module.params["clone_name"]
     resource_name       = module.params["resource_name"]
@@ -111,35 +111,54 @@ def run_module():
 
     # ==== Command dictionary ====
 
-    commands                                        = {}
-    commands["RedHat"]                              = {}
-    commands["Suse"  ]                              = {}
-    commands["RedHat"]["status"]                    = "pcs status"
-    commands["Suse"  ]["status"]                    = "crm status"
-    commands["RedHat"]["cib"]                       = {}
-    commands["Suse"  ]["cib"]                       = {}
-    commands["RedHat"]["cib"]["create"]             = f"pcs cluster cib {new_cib_name}"
-    commands["Suse"  ]["cib"]["create"]             = f"crm cib new {new_cib_name}"
-    commands["RedHat"]["cib"]["push"]               = f"pcs cluster cib-push --config {new_cib_name}"
-    commands["Suse"  ]["cib"]["push"]               = f"crm cib commit {new_cib_name}"
-    commands["RedHat"]["cib"]["delete"]             = f"rm -f {new_cib_name}"
-    commands["Suse"  ]["cib"]["delete"]             = f"crm cib delete {new_cib_name}"
-    commands["RedHat"]["resource"]                  = {}
-    commands["Suse"  ]["resource"]                  = {}
-    commands["RedHat"]["resource"]["read"]          = f"pcs resource config {resource_name}"
-    commands["Suse"  ]["resource"]["read"]          = f"crm config show {resource_name}" 
-    commands["RedHat"]["clone"]                     = {}
-    commands["Suse"  ]["clone"]                     = {}
-    commands["RedHat"]["clone"]["read"]             = f"pcs resource config {clone_name}"
-    commands["Suse"  ]["clone"]["read"]             = f"crm config show {clone_name}"
-    commands["RedHat"]["clone"]["create"]           = f"pcs resource {clone_type} {resource_name} {options}"
-    commands["Suse"  ]["clone"]["create"]           = f"crm configure clone {clone_name} {resource_name} meta {suse_promotable} {options}"
-    commands["RedHat"]["clone"]["delete"]           = f"pcs resource unclone {resource_name}"
-    commands["Suse"  ]["clone"]["delete"]           = f"crm configure delete --force {clone_name}"
-    commands["RedHat"]["clone"]["shadow_create"]    = f"pcs -f {new_cib_name} resource {clone_type} {resource_name} {options}"
-    commands["Suse"  ]["clone"]["shadow_create"]    = f"crm -F -c {new_cib_name} configure clone {clone_name} {resource_name} meta {suse_promotable} {options}"
-    commands["RedHat"]["clone"]["shadow_delete"]    = f"pcs -f {new_cib_name} resource unclone {resource_name}"
-    commands["Suse"  ]["clone"]["shadow_delete"]    = f"crm -F -c {new_cib_name} configure delete --force {clone_name}"
+    commands                                                    = {}
+    commands["RedHat"]                                          = {}
+    commands["Suse"  ]                                          = {}
+    commands["RedHat"]["status"]                                = "pcs status"
+    commands["Suse"  ]["status"]                                = "crm status"
+
+    commands["RedHat"]["cib"]                                   = {}
+    commands["Suse"  ]["cib"]                                   = {}
+    commands["RedHat"]["cib"]["create"]                         = f"pcs cluster cib {new_cib_name}"
+    commands["Suse"  ]["cib"]["create"]                         = f"crm cib new {new_cib_name}"
+    commands["RedHat"]["cib"]["push"]                           = f"pcs cluster cib-push --config {new_cib_name}"
+    commands["Suse"  ]["cib"]["push"]                           = f"crm cib commit {new_cib_name}"
+    commands["RedHat"]["cib"]["delete"]                         = f"rm -f {new_cib_name}"
+    commands["Suse"  ]["cib"]["delete"]                         = f"crm cib delete {new_cib_name}"
+
+    commands["RedHat"]["resource"]                              = {}
+    commands["Suse"  ]["resource"]                              = {}
+    commands["RedHat"]["resource"]["read"]                      = f"pcs resource config {resource_name}"
+    commands["Suse"  ]["resource"]["read"]                      = f"crm config show {resource_name}"
+    
+    commands["RedHat"]["clone"]                                 = {}
+    commands["Suse"  ]["clone"]                                 = {}
+    commands["RedHat"]["clone"]["read"]                         = f"pcs resource config {clone_name}"
+    commands["Suse"  ]["clone"]["read"]                         = f"crm config show {clone_name}"
+    commands["RedHat"]["clone"]["delete"]                       = f"pcs resource unclone {resource_name}"
+    commands["Suse"  ]["clone"]["delete"]                       = f"crm configure delete --force {clone_name}"
+    commands["RedHat"]["clone"]["shadow_delete"]                = f"pcs -f {new_cib_name} resource unclone {resource_name}"
+    commands["Suse"  ]["clone"]["shadow_delete"]                = f"crm -F -c {new_cib_name} configure delete --force {clone_name}"
+
+    commands["RedHat"]["7"  ]["clone"]                          = {}
+    commands["RedHat"]["8"  ]["clone"]                          = {}
+    commands["Suse"  ]["all"]["clone"]                          = {}
+    commands["RedHat"]["7"  ]["clone"]["create"]                = f"pcs resource clone {resource_name} {options}"
+    commands["RedHat"]["8"  ]["clone"]["create"]                = f"pcs resource clone {resource_name} {options}"
+    commands["Suse"  ]["all"]["clone"]["create"]                = f"crm configure clone {clone_name} {resource_name} meta {options}"
+    commands["RedHat"]["7"  ]["clone"]["shadow_create"]         = f"pcs -f {new_cib_name} resource clone {resource_name} {options}"
+    commands["RedHat"]["8"  ]["clone"]["shadow_create"]         = f"pcs -f {new_cib_name} resource clone {resource_name} {options}"
+    commands["Suse"  ]["all"]["clone"]["shadow_create"]         = f"crm -F -c {new_cib_name} configure clone {clone_name} {resource_name} meta {options}"
+    
+    commands["RedHat"]["7"  ]["promotable"]                     = {}
+    commands["RedHat"]["8"  ]["promotable"]                     = {}
+    commands["Suse"  ]["all"]["promotable"]                     = {}
+    commands["RedHat"]["7"  ]["promotable"]["create"]           = f"pcs resource master {clone_name} {resource_name} {options}"
+    commands["RedHat"]["8"  ]["promotable"]["create"]           = f"pcs resource promotable {resource_name} {options}"
+    commands["Suse"  ]["all"]["promotable"]["create"]           = f"crm configure clone {clone_name} {resource_name} meta promotable=true {options}"
+    commands["RedHat"]["7"  ]["promotable"]["shadow_create"]    = f"pcs -f {new_cib_name} resource master {clone_name} {resource_name} {options}"
+    commands["RedHat"]["8"  ]["promotable"]["shadow_create"]    = f"pcs -f {new_cib_name} resource promotable {resource_name} {options}"
+    commands["Suse"  ]["all"]["promotable"]["shadow_create"]    = f"crm -F -c {new_cib_name} configure clone {clone_name} {resource_name} meta promotable=true {options}"
     
 
     # ==== Initial checks ====
@@ -167,7 +186,7 @@ def run_module():
                         "Underlying resource to be cloned was not found")
         result["changed"] = True
         if not module.check_mode:
-            cmd = commands[os]["clone"]["create"]
+            cmd = commands[os][version][clone_type]["create"]
             execute_command(module, result, cmd, 
                             "Successfully cloned the resource. ", 
                             "Failed to clone the resource")
@@ -200,7 +219,7 @@ def run_module():
                         "Error deleting existing clone using the temporary (shadow) cib file")
 
         # Create the desired resource using shadow cib
-        cmd = commands[os]["clone"]["shadow_create"]
+        cmd = commands[os][version][clone_type]["shadow_create"]
         execute_command(module, result, cmd,
                         "",
                         "Error updating the clone using the temporary (shadow) cib file")
