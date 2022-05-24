@@ -140,6 +140,10 @@ def run_module():
     commands["RedHat"]["clone"]["shadow_delete"]                = f"pcs -f {new_cib_name} resource unclone {resource_name}"
     commands["Suse"  ]["clone"]["shadow_delete"]                = f"crm -F -c {new_cib_name} configure delete --force {clone_name}"
 
+    
+    commands["RedHat"]["7"  ]                                   = {}
+    commands["RedHat"]["8"  ]                                   = {}
+    commands["Suse"  ]["all"]                                   = {}
     commands["RedHat"]["7"  ]["clone"]                          = {}
     commands["RedHat"]["8"  ]["clone"]                          = {}
     commands["Suse"  ]["all"]["clone"]                          = {}
