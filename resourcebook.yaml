@@ -10,11 +10,6 @@
         name: rsc_st_azure
         resource_class: stonith
         resource_type: fence_azure_arm
-        options: |
-          pcmk_monitor_retries=3
-          pcmk_action_limit=2
-          power_timeout=140
-          pcmk_reboot_timeout=800
       register: resultobj
     - name: "Ensure cluster resource is absent: Output"
       debug:
@@ -27,6 +22,11 @@
         resource_class: stonith
         resource_type: fence_azure_arm
         options: |
+          subscriptionId="testvalue"
+          resourceGroup="testvalue"
+          tenantId="testvalue"
+          login="testvalue"
+          passwd="testvalue"
           pcmk_monitor_retries=3
           pcmk_action_limit=2
           power_timeout=140
@@ -43,6 +43,11 @@
         resource_class: stonith
         resource_type: fence_azure_arm
         options: |
+          subscriptionId="testvalue"
+          resourceGroup="testvalue"
+          tenantId="testvalue"
+          login="testvalue"
+          passwd="testvalue"
           pcmk_monitor_retries=3
           pcmk_action_limit=2
           power_timeout=140
@@ -59,6 +64,11 @@
         resource_class: stonith
         resource_type: fence_azure_arm
         options: |
+          subscriptionId="testvalue2"
+          resourceGroup="testvalue2"
+          tenantId="testvalue"
+          login="testvalue"
+          passwd="testvalue"
           pcmk_monitor_retries=4
           pcmk_action_limit=3
           power_timeout=240
@@ -74,13 +84,78 @@
         name: idontexist
         resource_class: stonith
         resource_type: fence_azure_arm
-        options: |
-          pcmk_monitor_retries=4
-          pcmk_action_limit=3
-          power_timeout=240
-          pcmk_reboot_timeout=900
       register: resultobj
     - name: "Try removing nonexistent resource: Output"
+      debug:
+        msg: '{{ resultobj }}'
+    
+    - name: "HANA: Ensure cluster resource is absent"
+      cluster_resource:
+        state: present
+        name: SAPHana_TEST_RESOURCE
+        resource_type: SAPHana
+      register: resultobj
+    - name: "HANA: Ensure cluster resource is absent: Output"
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "HANA: Create cluster resource"
+      cluster_resource:
+        state: present
+        name: SAPHana_TEST_RESOURCE
+        resource_type: SAPHana
+        options: |
+          SID=12345 InstanceNumber=54321
+          PREFER_SITE_TAKEOVER=true DUPLICATE_PRIMARY_TIMEOUT=7200
+          AUTOMATED_REGISTER=false
+          op start timeout=60
+          op stop timeout=60
+          op monitor interval=59 role="Master" timeout=60
+          op monitor interval=61 role="Slave" timeout=60
+          op promote timeout=60
+          op demote timeout=60
+      register: resultobj
+    - name: "HANA: Create cluster resource: Output"
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Ensure idempotence"
+      cluster_resource:
+        state: present
+        name: SAPHana_TEST_RESOURCE
+        resource_type: SAPHana
+        options: |
+          SID=12345 InstanceNumber=54321
+          PREFER_SITE_TAKEOVER=true DUPLICATE_PRIMARY_TIMEOUT=7200
+          AUTOMATED_REGISTER=false
+          op start timeout=60
+          op stop timeout=60
+          op monitor interval=59 role="Master" timeout=60
+          op monitor interval=61 role="Slave" timeout=60
+          op promote timeout=60
+          op demote timeout=60
+      register: resultobj
+    - name: "Ensure idempotence: Output"
+      debug:
+        msg: '{{ resultobj }}'
+
+    - name: "Modify the resource"
+      cluster_resource:
+        state: present
+        name: SAPHana_TEST_RESOURCE
+        resource_type: SAPHana
+        options: |
+          SID=12345 InstanceNumber=54321
+          PREFER_SITE_TAKEOVER=true DUPLICATE_PRIMARY_TIMEOUT=7100
+          AUTOMATED_REGISTER=true
+          op start timeout=600
+          op stop timeout=600
+          op monitor interval=59 role="Master" timeout=600
+          op monitor interval=61 role="Slave" timeout=600
+          op promote timeout=600
+          op demote timeout=600
+      register: resultobj
+    - name: "Modify the resource: Output"
       debug:
         msg: '{{ resultobj }}'
       
