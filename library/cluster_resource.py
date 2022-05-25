@@ -130,6 +130,7 @@ def run_module():
 
     class_provider_type = format_class_provider_type()
     read_type           = "stonith" if resource_class == "stonith" else "resource"
+    read_command        = "show" if version == "7" else "config"
     curr_cib_path       = "/var/lib/pacemaker/cib/cib.xml"
     new_cib_name        = "shadow-cib" + str(uuid.uuid4())
 
@@ -149,7 +150,7 @@ def run_module():
     commands["Suse"  ]["cib"]["delete"]             = "crm cib delete %s"    # % new_cib_name
     commands["RedHat"]["resource"]                  = {}
     commands["Suse"  ]["resource"]                  = {}
-    commands["RedHat"]["resource"]["read"]          = f"pcs {read_type} config {name}"
+    commands["RedHat"]["resource"]["read"]          = f"pcs {read_type} {read_command} {name}"
     commands["Suse"  ]["resource"]["read"]          = f"crm config show {name}" 
     commands["RedHat"]["resource"]["create"]        = f"pcs {read_type} create {name} {class_provider_type} {options}"
     commands["Suse"  ]["resource"]["create"]        = f"crm configure primitive {name} {class_provider_type} {options}"
