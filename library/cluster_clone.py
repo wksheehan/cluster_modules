@@ -139,9 +139,6 @@ def run_module():
     commands["RedHat"]["7"  ]["read"]                           = "pcs resource show %s"    # % resource_name or clone_name
     commands["RedHat"]["8"  ]["read"]                           = "pcs resource config %s"  # % resource_name or clone_name
     commands["Suse"  ]["all"]["read"]                           = "crm config show %s"      # % resource_name or clone_name
-    commands["RedHat"]["7"  ]["xpath"]                          = f".//master[@id='{clone_name}']"
-    commands["RedHat"]["8"  ]["xpath"]                          = f".//clone[@id='{clone_name}']"
-    commands["Suse"  ]["all"]["xpath"]                          = f".//clone[@id='{clone_name}']"
 
     commands["RedHat"]["7"  ]["clone"]                          = {}
     commands["RedHat"]["8"  ]["clone"]                          = {}
@@ -230,10 +227,15 @@ def run_module():
         new_cib_path = f"/var/lib/pacemaker/cib/shadow.{new_cib_name}" if os == "Suse" else f"./{new_cib_name}"
 
         # Get the current and new resource XML objects
+        if os == "RedHat" and version == "7" and clone_type == "promotable":
+            xpath = f".//master[@id='{clone_name}']"
+        else:
+            xpath = f".//clone[@id='{clone_name}']"
+        
         curr_cib        = ET.parse(curr_cib_path)
         new_cib         = ET.parse(new_cib_path)
-        curr_clone      = curr_cib.getroot().find(commands[os][version]["xpath"])
-        new_clone       = new_cib.getroot().find(commands[os][version]["xpath"])
+        curr_clone      = curr_cib.getroot().find(xpath)
+        new_clone       = new_cib.getroot().find(xpath)
 
         is_different    = compare_clones(curr_clone, new_clone)
 
