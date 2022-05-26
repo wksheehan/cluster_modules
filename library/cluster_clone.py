@@ -125,16 +125,9 @@ def run_module():
     commands["Suse"  ]["cib"]["push"]                           = f"crm cib commit {new_cib_name}"
     commands["RedHat"]["cib"]["delete"]                         = f"rm -f {new_cib_name}"
     commands["Suse"  ]["cib"]["delete"]                         = f"crm cib delete {new_cib_name}"
-
-    commands["RedHat"]["resource"]                              = {}
-    commands["Suse"  ]["resource"]                              = {}
-    commands["RedHat"]["resource"]["read"]                      = f"pcs resource config {resource_name}"
-    commands["Suse"  ]["resource"]["read"]                      = f"crm config show {resource_name}"
     
     commands["RedHat"]["clone"]                                 = {}
     commands["Suse"  ]["clone"]                                 = {}
-    commands["RedHat"]["clone"]["read"]                         = f"pcs resource config {clone_name}"
-    commands["Suse"  ]["clone"]["read"]                         = f"crm config show {clone_name}"
     commands["RedHat"]["clone"]["delete"]                       = f"pcs resource unclone {resource_name}"
     commands["Suse"  ]["clone"]["delete"]                       = f"crm configure delete --force {clone_name}"
     commands["RedHat"]["clone"]["shadow_delete"]                = f"pcs -f {new_cib_name} resource unclone {resource_name}"
@@ -144,6 +137,10 @@ def run_module():
     commands["RedHat"]["7"  ]                                   = {}
     commands["RedHat"]["8"  ]                                   = {}
     commands["Suse"  ]["all"]                                   = {}
+    commands["RedHat"]["7"  ]["read"]                           = "pcs resource show %s"    # % resource_name or clone_name
+    commands["RedHat"]["8"  ]["read"]                           = "pcs resource config %s"  # % resource_name or clone_name
+    commands["Suse"  ]["all"]["read"]                           = "crm config show %s"      # % resource_name or clone_name
+    
     commands["RedHat"]["7"  ]["clone"]                          = {}
     commands["RedHat"]["8"  ]["clone"]                          = {}
     commands["Suse"  ]["all"]["clone"]                          = {}
@@ -178,13 +175,13 @@ def run_module():
 
     # Returns true if a clone with the given name exists
     def clone_exists():
-        rc, out, err = module.run_command(commands[os]["clone"]["read"])
+        rc, out, err = module.run_command(commands[os][version]["read"]) % clone_name
         return rc == 0
 
     # Creates a new clone of a resource with the specified options
     def clone_resource():
         # Check that underlying resource exists
-        cmd = commands[os]["resource"]["read"]
+        cmd = commands[os][version]["read"] % resource_name
         execute_command(module, result, cmd,
                         "",
                         "Underlying resource to be cloned was not found")
