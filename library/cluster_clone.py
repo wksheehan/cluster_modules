@@ -226,16 +226,11 @@ def run_module():
         
         new_cib_path = f"/var/lib/pacemaker/cib/shadow.{new_cib_name}" if os == "Suse" else f"./{new_cib_name}"
 
-        # Get the current and new resource XML objects
-        if os == "RedHat" and version == "7" and clone_type == "promotable":
-            xpath = f".//master[@id='{clone_name}']"
-        else:
-            xpath = f".//clone[@id='{clone_name}']"
-        
+        # Get the current and new resource XML objects   
         curr_cib        = ET.parse(curr_cib_path)
         new_cib         = ET.parse(new_cib_path)
-        curr_clone      = curr_cib.getroot().find(xpath)
-        new_clone       = new_cib.getroot().find(xpath)
+        curr_clone      = curr_cib.getroot().find(f".//primitive[@id='{resource_name}']..")
+        new_clone       = new_cib.getroot().find(f".//primitive[@id='{resource_name}']..")
 
         is_different    = compare_clones(curr_clone, new_clone)
 
