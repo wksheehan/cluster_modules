@@ -91,7 +91,7 @@
     
     - name: "HANA: Ensure cluster resource is absent"
       cluster_resource:
-        state: present
+        state: absent
         name: SAPHana_TEST_RESOURCE
         resource_type: SAPHana
       register: resultobj
