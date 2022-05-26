@@ -104,6 +104,10 @@ def run_module():
     
     if set_name is None:
         set_name = dtype + "-options"
+    if os == "RedHat" and version == "7":
+        awk_separator = ":"
+    else:
+        awk_separator = "="
 
 
     # ==== COMMAND DICTIONARY ====
@@ -125,9 +129,9 @@ def run_module():
     commands["Suse"  ]["rsc"]["unset"]              = f"crm_attribute --type rsc_defaults --set-name {set_name} --name {name} --delete"
     commands["RedHat"]["op" ]["unset"]              = f"pcs resource op defaults {name}="
     commands["Suse"  ]["op" ]["unset"]              = f"crm_attribute --type op_defaults --set-name {set_name} --name {name} --delete"
-    commands["RedHat"]["rsc"]["get"]                = "pcs resource defaults | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'"  % name
+    commands["RedHat"]["rsc"]["get"]                = "pcs resource defaults | grep %s | awk -F'[%s]' '{print $2}' | tr -d '[:space:]'"  % (name, awk_separator)
     commands["Suse"  ]["rsc"]["get"]                = f"crm_attribute --type rsc_defaults --set-name {set_name} --name {name} --query --quiet | tr -d '[:space:]'"
-    commands["RedHat"]["op" ]["get"]                = "pcs resource op defaults | grep %s | awk -F'[=]' '{print $2}' | tr -d '[:space:]'"  % name
+    commands["RedHat"]["op" ]["get"]                = "pcs resource op defaults | grep %s | awk -F'[%s]' '{print $2}' | tr -d '[:space:]'"  % (name, awk_separator)
     commands["Suse"  ]["op" ]["get"]                = f"crm_attribute --type op_defaults --set-name {set_name} --name {name} --query --quiet | tr -d '[:space:]'"
     commands["RedHat"]["rsc"]["check"]              = f"pcs resource defaults | grep {name}"
     commands["Suse"  ]["rsc"]["check"]              = f"crm_attribute --type rsc_defaults --set-name {set_name} --name {name} --query"
