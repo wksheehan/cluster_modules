@@ -103,7 +103,6 @@ def run_module():
 
     curr_cib_path       = "/var/lib/pacemaker/cib/cib.xml"
     new_cib_name        = "shadow-cib" + str(uuid.uuid4())
-    suse_promotable     = "promotable=true" if clone_type == "promotable" else ""
 
     if clone_name is None:
         clone_name = resource_name + "-clone"
@@ -140,7 +139,10 @@ def run_module():
     commands["RedHat"]["7"  ]["read"]                           = "pcs resource show %s"    # % resource_name or clone_name
     commands["RedHat"]["8"  ]["read"]                           = "pcs resource config %s"  # % resource_name or clone_name
     commands["Suse"  ]["all"]["read"]                           = "crm config show %s"      # % resource_name or clone_name
-    
+    commands["RedHat"]["7"  ]["xpath"]                          = f".//master[@id='{clone_name}']"
+    commands["RedHat"]["8"  ]["xpath"]                          = f".//clone[@id='{clone_name}']"
+    commands["Suse"  ]["all"]["xpath"]                          = f".//clone[@id='{clone_name}']"
+
     commands["RedHat"]["7"  ]["clone"]                          = {}
     commands["RedHat"]["8"  ]["clone"]                          = {}
     commands["Suse"  ]["all"]["clone"]                          = {}
@@ -175,7 +177,7 @@ def run_module():
 
     # Returns true if a clone with the given name exists
     def clone_exists():
-        rc, out, err = module.run_command(commands[os][version]["read"]) % clone_name
+        rc, out, err = module.run_command(commands[os][version]["read"] % clone_name)
         return rc == 0
 
     # Creates a new clone of a resource with the specified options
@@ -230,8 +232,8 @@ def run_module():
         # Get the current and new resource XML objects
         curr_cib        = ET.parse(curr_cib_path)
         new_cib         = ET.parse(new_cib_path)
-        curr_clone      = curr_cib.getroot().find(f".//clone[@id='{clone_name}']")
-        new_clone       = new_cib.getroot().find(f".//clone[@id='{clone_name}']")
+        curr_clone      = curr_cib.getroot().find(commands[os][version]["xpath"])
+        new_clone       = new_cib.getroot().find(commands[os][version]["xpath"])
 
         is_different    = compare_clones(curr_clone, new_clone)
 
@@ -261,6 +263,8 @@ def run_module():
     # Compare two primitive object xmls for differences
     # Returns 1 (True) if there is a difference, 0 (False) if not
     def compare_clones(resource1, resource2):
+        if resource1 is None or resource2 is None:
+            module.fail_json(msg="Atleast one of the resource xml objects is None", **result)
         # Write the clone xml to a file
         r1_file_fd, r1_file_path = tempfile.mkstemp()
         r2_file_fd, r2_file_path = tempfile.mkstemp()
