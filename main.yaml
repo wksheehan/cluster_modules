@@ -22,6 +22,9 @@
 - name: "Import defaultsbook"
   import_playbook: "defaultsbook.yaml"
 
+- name: "Import standbybook"
+  import_playbook: "standbybook.yaml"
+
 
 
 

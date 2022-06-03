@@ -6,9 +6,13 @@
   tasks:
     - name: "Set the nodes list per OS"
       ansible.builtin.set_fact:
-        node1: "x0rapp00leb7"
-        node2: "x0rapp01leb7"
-      when: ansible_os_family == "RedHat"
+        nodelist: "x0rapp00leb7 x0rapp01leb7"
+      when: ansible_os_family == "RedHat"and ansible_distribution_major_version == "8"
+    
+    - name: "Set the nodes list per OS"
+      ansible.builtin.set_fact:
+        nodelist: "x7rapp00l1ed x7rapp01l1ed"
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "7"
     
     - name: "Set the nodes list per OS"
       ansible.builtin.set_fact:
